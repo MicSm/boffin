@@ -6,6 +6,13 @@
 
 <p align="center">Portable architectural guardrails for AI coding agents.</p>
 
+<p align="center">
+  <a href="#evidence">Evidence</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#make-the-effect-visible">Make The Effect Visible</a> •
+  <a href="#how-it-works-under-the-hood">How It Works</a>
+</p>
+
 AI agents write code fast but forget your architecture between sessions. They
 duplicate logic you deliberately extracted, flatten special cases you preserved
 on purpose, and drift away from boundaries that took months to establish.
@@ -88,6 +95,26 @@ git clone <your-project-url> .repos/target
 2. Put (or symlink) the `packs/` folder where the agent can read it.
 3. The instruction file tells the agent to load relevant packs before
    writing code and re-check the diff afterward.
+
+## Make The Effect Visible
+
+It is not always obvious whether a good architectural catch came from the agent's
+base model or from ParselFire's loaded constraints.
+
+To make ParselFire's contribution visible, ask the agent not only to review or
+refactor your code, but also to explicitly report which constraints it applied
+during the work.
+
+Example prompt:
+
+```text
+Work in this repository and analyze modules A, B, and C for compliance with their architectural invariants.
+Give me a compact list of which ParselFire kernels you applied during the analysis and why each one was relevant.
+```
+
+That makes the result auditable: you see not just the issues the agent found,
+but which architectural kernels were active and why they helped surface those
+issues.
 
 ## What Ships In v0
 
