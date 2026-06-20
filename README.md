@@ -1,6 +1,10 @@
-# ParselFire
+<p align="center">
+  <img src="logo.png" alt="ParselFire logo" width="200">
+</p>
 
-Portable architectural guardrails for AI coding agents.
+<h1 align="center">ParselFire</h1>
+
+<p align="center">Portable architectural guardrails for AI coding agents.</p>
 
 AI agents write code fast but forget your architecture between sessions. They
 duplicate logic you deliberately extracted, flatten special cases you preserved
