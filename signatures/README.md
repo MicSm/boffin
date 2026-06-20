@@ -49,6 +49,24 @@ Get-ChildItem packs -Recurse -Filter *.urf.md | ForEach-Object {
 }
 ```
 
+## Automation Helper
+
+For repeatable local verification and re-signing from the repo root, use:
+
+```text
+python scripts/pack_signatures.py verify
+python scripts/pack_signatures.py sign --passphrase-file path/to/secret.txt
+python scripts/pack_signatures.py sign --key <fingerprint> --passphrase-file path/to/secret.txt
+python scripts/pack_signatures.py sign --dry-run
+```
+
+The helper scans `packs/` recursively for every `*.md` file and expects or
+writes a neighboring detached signature with the same filename plus `.sig`.
+
+For batch signing, supply the passphrase via `--passphrase-file` (reads first
+line) or `--passphrase` (less safe — visible in process list). The passphrase
+is fed to `gpg` in loopback mode so pinentry does not pop up once per file.
+
 ## Contributor Requirements
 
 - external contributors must publish their public key under `signatures/pubkeys/`
