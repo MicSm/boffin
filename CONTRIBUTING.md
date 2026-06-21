@@ -51,10 +51,18 @@ When changing files under `packs/`:
    from positive and negative sides.
 4. Keep leaf records sorted by `stage` first and id second.
 5. Keep exact `signals=` tokens unique within one family index.
-6. Use stable architectural nouns in `scope=`; avoid transient file and helper
+6. Keep universal `S` `refs=` and language-family `SR` `refs=` complete and
+   sorted whenever a K entry is added, removed, or re-staged. Keep each
+   `## LEAVES` `stages=` equal to the set of stages its leaf's kernels occupy.
+   A leaf file missing from `## LEAVES` is a structural error because stage
+   resolution depends on that registry.
+7. Use stable architectural nouns in `scope=`; avoid transient file and helper
    names unless they define a durable boundary.
-7. Keep public packs portable. If a pattern is too domain-specific or too
+8. Keep public packs portable. If a pattern is too domain-specific or too
    sensitive for the shipped core families, move it out of the core surface.
+9. Treat pack index changes, matching public docs/spec updates, extractor
+   protocol updates, and detached signatures as one maintenance transaction when
+   stage refs change.
 
 ## Editing Portable Adapters
 
@@ -79,12 +87,17 @@ If you add a new core family under `packs/`:
 - add or update the relevant `.cursor/rules/*.mdc` activation rules if the
   family should participate in runtime routing
 - keep `## STAGES` only in `packs/universal/pack.urf.md`
+- use `## STAGE-REFS` on non-universal family indexes if the family contributes
+  K ids to the shared universal stage pipeline
 
 If you add a new leaf:
 
-- register it in the family's `## LEAVES`
+- register it in the family's `## LEAVES` with a `stages=` listing the stages
+  its kernels occupy
 - add at least one matching `R##` route in `## ROUTING`
 - keep route signals short, literal, and present in the target leaf
+- add the new K id to the appropriate stage refs line (`S##` for universal,
+  `SR##` for language families)
 
 ## Validation Before You Open A PR
 
@@ -95,9 +108,10 @@ python scripts/pack_lint.py
 python scripts/check_adapter_copies.py
 ```
 
-The current validator checks the core `packs/` tree. If your contribution also
-touches documentation, make sure README links and file-layout references still
-match the tracked repository.
+The current validator checks the core `packs/` tree, including stage refs and
+universal directives. If your contribution also touches documentation, make
+sure README links, file-layout references, and format examples still match the
+tracked repository.
 
 ## Versioning For Now
 
@@ -135,6 +149,8 @@ Before submitting a PR, make sure:
   host adapters, or manifest surfaces
 - new routing signals stay unique inside the edited family
 - new K/X records are mirrored and stage-sorted
+- any changed stage placement also updates the matching `refs=` or `SR` line
+  and the target leaf's `## LEAVES` `stages=`
 - public docs do not describe superseded runtime paths as if they were active
 - public docs do not claim plugin, hook, or slash-command behavior that is not
   actually implemented and manually exercised

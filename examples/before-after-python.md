@@ -140,13 +140,18 @@ assembly, result mapping, and ordered reassembly.
 ## Reproduction Outline
 
 1. Clone or update a target repository under `.repos/`.
-2. Load `packs/universal/pack.urf.md` and route to the smallest relevant
-   universal leaf.
+2. Load `packs/universal/pack.urf.md`, route to the primary relevant universal
+   leaf, and walk stages S00-S06 before deciding what to act on.
 3. For Python targets, also load `packs/python-architecture/pack.urf.md` and
-   the smallest relevant Python leaf.
-4. If the change truly spans themes, load the second leaf explicitly and say so
-   in the write-up.
-5. Select 3-5 total K/X entries, keep the change local, and audit the resulting
-   diff against those entries before writing conclusions.
-6. Run the target project's own tests from the repo's working environment and
+   the primary relevant Python leaf.
+4. If the primary seam is a late-stage refactor (S04-S06), also load at least
+   one early-stage correctness leaf (S01-S03). If the walked stages reach other
+   leaves, load the leaves whose `stages=` cover them and say so in the
+   write-up.
+5. For a focused change, keep the edit local; the 3-5 budget applies only to
+   the K/X entries you materially act on after the stage walk, not to the read
+   set itself.
+6. For an open-ended refactor or review, do a read-only audit pass first,
+   record findings by stage, then apply and verify them one by one.
+7. Run the target project's own tests from the repo's working environment and
    record the exact `git diff --stat` output that produced the example.

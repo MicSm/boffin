@@ -8,11 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS_DIR = ROOT / "packs"
+ROUTING_RULE_PATH = ROOT / ".cursor" / "rules" / "parselfire-pack-routing.mdc"
 HEADING_RE = re.compile(r"^##\s+(?P<name>[A-Z-]+)\s*$")
 PAIR_ID_RE = re.compile(r"^(?P<prefix>[A-Z]+)-(?P<kind>[KX])(?P<number>\d+)$")
 ROUTING_ID_RE = re.compile(r"^[RL]\d+$")
 STAGE_ID_RE = re.compile(r"^S\d{2}$")
+STAGE_REF_ID_RE = re.compile(r"^SR\d{2}$")
+DIRECTIVE_ID_RE = re.compile(r"^![A-Z-]+$")
 LOWER_SIGNAL_RE = re.compile(r"^[a-z0-9-]+$")
+RULE_STAGE_SUMMARY_RE = re.compile(r"^-\s+(S\d{2})\s+[^:]+:")
+EXPECTED_STAGE_DIRECTIVES = ["!PURPOSE", "!APPLY", "!ANTI", "!SHOW"]
+EXPECTED_STAGE_IDS = [f"S{stage:02d}" for stage in range(7)]
 FAMILY_PREFIXES = {
     "universal": "UNI",
     "cpp-architecture": "CPP",
@@ -27,7 +33,18 @@ class Record:
     section: str
     raw: str
     record_id: str
+    tokens: tuple[str, ...]
     fields: dict[str, str]
+
+
+@dataclass(frozen=True)
+class IndexValidation:
+    actual_leaf_names: set[str]
+    leaf_registry: dict[str, Record]
+    route_records: list[Record]
+    stage_records: list[Record]
+    stage_ref_records: list[Record]
+    leaf_declared_stages: dict[str, set[int]]
 
 
 class LintState:
@@ -58,9 +75,12 @@ def parse_urf_file(path: Path, state: LintState) -> list[Record]:
             continue
         parts = stripped.split("|")
         record_id = parts[0]
+        tokens = tuple(parts[1:])
         fields: dict[str, str] = {}
-        for token in parts[1:]:
+        for token in tokens:
             if "=" not in token:
+                if record_id.startswith("!"):
+                    continue
                 state.error(path, line_number, f"record token lacks '=': {token!r}")
                 continue
             key, value = token.split("=", 1)
@@ -72,6 +92,7 @@ def parse_urf_file(path: Path, state: LintState) -> list[Record]:
                 section=current_section,
                 raw=stripped,
                 record_id=record_id,
+                tokens=tokens,
                 fields=fields,
             )
         )
@@ -100,6 +121,73 @@ def parse_pair_id(record: Record, state: LintState) -> tuple[str, str, int] | No
         state.error(record.file_path, record.line_number, f"invalid K/X id {record.record_id!r}")
         return None
     return match.group("prefix"), match.group("kind"), int(match.group("number"))
+
+
+def parse_refs_field(record: Record, expected_prefix: str, state: LintState) -> list[str]:
+    refs_value = record.fields.get("refs")
+    if not refs_value:
+        state.error(record.file_path, record.line_number, "record is missing refs=")
+        return []
+    refs = refs_value.split(";")
+    seen: set[str] = set()
+    ordered_numbers: list[int] = []
+    parsed_refs: list[str] = []
+    for ref in refs:
+        if not ref:
+            state.error(record.file_path, record.line_number, "refs contain an empty token")
+            continue
+        match = PAIR_ID_RE.match(ref)
+        if match is None:
+            state.error(record.file_path, record.line_number, f"refs entry {ref!r} is not a valid K id")
+            continue
+        prefix = match.group("prefix")
+        kind = match.group("kind")
+        number = int(match.group("number"))
+        if kind != "K":
+            state.error(record.file_path, record.line_number, f"refs entry {ref!r} must point to a K id")
+        if prefix != expected_prefix:
+            state.error(
+                record.file_path,
+                record.line_number,
+                f"refs entry {ref!r} does not match family prefix {expected_prefix!r}",
+            )
+        if ref in seen:
+            state.error(record.file_path, record.line_number, f"refs entry {ref!r} is duplicated")
+            continue
+        seen.add(ref)
+        ordered_numbers.append(number)
+        parsed_refs.append(ref)
+    if ordered_numbers and ordered_numbers != sorted(ordered_numbers):
+        state.error(record.file_path, record.line_number, "refs ids must be sorted by numeric suffix")
+    return parsed_refs
+
+
+def parse_stage_list_field(record: Record, field: str, state: LintState) -> set[int]:
+    raw = record.fields.get(field)
+    if not raw:
+        state.error(record.file_path, record.line_number, f"record is missing {field}=")
+        return set()
+    seen_order: list[int] = []
+    result: set[int] = set()
+    for part in raw.split(";"):
+        if not part:
+            state.error(record.file_path, record.line_number, f"{field} contains an empty token")
+            continue
+        if not part.isdigit():
+            state.error(record.file_path, record.line_number, f"{field} entry {part!r} is not an integer")
+            continue
+        value = int(part)
+        if value < 0 or value > 6:
+            state.error(record.file_path, record.line_number, f"{field} entry {value} is outside 0..6")
+            continue
+        if value in result:
+            state.error(record.file_path, record.line_number, f"{field} entry {value} is duplicated")
+            continue
+        result.add(value)
+        seen_order.append(value)
+    if seen_order != sorted(seen_order):
+        state.error(record.file_path, record.line_number, f"{field} values must be ascending")
+    return result
 
 
 def resolve_pack_target(family_dir: Path, target: str) -> Path | None:
@@ -159,24 +247,56 @@ def validate_dense_sequence(index_path: Path, records: list[Record], kind: str, 
         state.error(index_path, 1, f"{kind} ids must be dense with no gaps")
 
 
-def validate_stage_section(index_path: Path, family_dir: Path, stage_records: list[Record], state: LintState) -> None:
-    if family_dir.name != "universal":
-        if stage_records:
-            state.error(index_path, 1, "## STAGES is only valid in packs/universal/pack.urf.md")
-        return
+def validate_universal_stage_section(
+    index_path: Path,
+    directive_records: list[Record],
+    stage_records: list[Record],
+    state: LintState,
+) -> None:
+    actual_directives = [record.record_id for record in directive_records]
+    if actual_directives != EXPECTED_STAGE_DIRECTIVES:
+        state.error(
+            index_path,
+            1,
+            "## STAGES must begin with !PURPOSE, !APPLY, !ANTI, !SHOW in order",
+        )
+    for record in directive_records:
+        if not DIRECTIVE_ID_RE.match(record.record_id):
+            state.error(record.file_path, record.line_number, f"invalid directive id {record.record_id!r}")
+        if not record.tokens:
+            state.error(record.file_path, record.line_number, "directive must include at least one payload token")
 
-    expected_ids = [f"S{stage:02d}" for stage in range(7)]
-    actual_ids = [record.record_id for record in stage_records]
-    if actual_ids != expected_ids:
+    actual_stage_ids = [record.record_id for record in stage_records]
+    if actual_stage_ids != EXPECTED_STAGE_IDS:
         state.error(index_path, 1, "## STAGES must contain S00 through S06 in order")
-
     for record in stage_records:
         if not STAGE_ID_RE.match(record.record_id):
             state.error(record.file_path, record.line_number, f"invalid stage id {record.record_id!r}")
         if "name" not in record.fields:
             state.error(record.file_path, record.line_number, "stage record is missing name=")
-        if "question" not in record.fields:
-            state.error(record.file_path, record.line_number, "stage record is missing question=")
+        if "focus" not in record.fields:
+            state.error(record.file_path, record.line_number, "stage record is missing focus=")
+        if "refs" not in record.fields:
+            state.error(record.file_path, record.line_number, "stage record is missing refs=")
+        if "question" in record.fields:
+            state.error(record.file_path, record.line_number, "stage record must use focus= instead of question=")
+
+
+def validate_stage_ref_section(index_path: Path, stage_ref_records: list[Record], state: LintState) -> None:
+    if not stage_ref_records:
+        state.error(index_path, 1, "non-universal family indexes must contain ## STAGE-REFS")
+        return
+    actual_ids = [record.record_id for record in stage_ref_records]
+    sorted_ids = sorted(actual_ids)
+    if actual_ids != sorted_ids:
+        state.error(index_path, 1, "## STAGE-REFS ids must be ascending")
+    if len(actual_ids) != len(set(actual_ids)):
+        state.error(index_path, 1, "## STAGE-REFS ids must be unique")
+    for record in stage_ref_records:
+        if not STAGE_REF_ID_RE.match(record.record_id):
+            state.error(record.file_path, record.line_number, f"invalid stage-ref id {record.record_id!r}")
+        if "refs" not in record.fields:
+            state.error(record.file_path, record.line_number, "stage-ref record is missing refs=")
 
 
 def build_leaf_anchor_text(leaf_path: Path, leaf_records: list[Record], theme: str) -> str:
@@ -219,12 +339,23 @@ def validate_index(
     index_path: Path,
     records: list[Record],
     state: LintState,
-) -> tuple[set[str], dict[str, Record], list[Record]]:
-    stage_records = [record for record in records if record.section == "STAGES"]
+) -> IndexValidation:
+    stage_section_records = [record for record in records if record.section == "STAGES"]
+    directive_records = [record for record in stage_section_records if record.record_id.startswith("!")]
+    stage_records = [record for record in stage_section_records if not record.record_id.startswith("!")]
+    stage_ref_records = [record for record in records if record.section == "STAGE-REFS"]
     route_records = [record for record in records if record.section == "ROUTING"]
     leaf_records = [record for record in records if record.section == "LEAVES"]
 
-    validate_stage_section(index_path, family_dir, stage_records, state)
+    if family_dir.name == "universal":
+        if stage_ref_records:
+            state.error(index_path, 1, "## STAGE-REFS is not valid in packs/universal/pack.urf.md")
+        validate_universal_stage_section(index_path, directive_records, stage_records, state)
+    else:
+        if stage_section_records:
+            state.error(index_path, 1, "## STAGES is only valid in packs/universal/pack.urf.md")
+        validate_stage_ref_section(index_path, stage_ref_records, state)
+
     validate_dense_sequence(index_path, route_records, "R", state)
     validate_dense_sequence(index_path, leaf_records, "L", state)
 
@@ -232,6 +363,7 @@ def validate_index(
     registry_targets: set[str] = set()
     used_signals: dict[str, Record] = {}
     leaf_registry: dict[str, Record] = {}
+    leaf_declared_stages: dict[str, set[int]] = {}
 
     for record in route_records:
         if not ROUTING_ID_RE.match(record.record_id) or not record.record_id.startswith("R"):
@@ -274,6 +406,10 @@ def validate_index(
             state.error(record.file_path, record.line_number, f"leaf registry target {leaf_name!r} does not exist")
         if "theme" not in record.fields:
             state.error(record.file_path, record.line_number, "leaf registry entry is missing theme=")
+        if "stages" not in record.fields:
+            state.error(record.file_path, record.line_number, "leaf registry entry is missing stages=")
+        else:
+            leaf_declared_stages[leaf_name] = parse_stage_list_field(record, "stages", state)
 
     for leaf_name in sorted(route_targets - registry_targets):
         state.error(index_path, 1, f"route target {leaf_name!r} is missing from ## LEAVES")
@@ -282,8 +418,16 @@ def validate_index(
 
     actual_leaf_names = {path.name for path in family_dir.glob("*.urf.md") if path.name != "pack.urf.md"}
     for leaf_name in sorted(actual_leaf_names - registry_targets):
-        state.warning(index_path, 1, f"leaf file {leaf_name!r} exists on disk but is missing from ## LEAVES")
-    return actual_leaf_names, leaf_registry, route_records
+        state.error(index_path, 1, f"leaf file {leaf_name!r} exists on disk but is missing from ## LEAVES")
+
+    return IndexValidation(
+        actual_leaf_names=actual_leaf_names,
+        leaf_registry=leaf_registry,
+        route_records=route_records,
+        stage_records=stage_records,
+        stage_ref_records=stage_ref_records,
+        leaf_declared_stages=leaf_declared_stages,
+    )
 
 
 def validate_leaf(
@@ -348,10 +492,84 @@ def validate_leaf(
                 parsed[number] = record
             order.append((stage, number))
         if order != sorted(order):
-            state.error(leaf_path, 1, f"records in ## {section_records[0].section if section_records else expected_kind} are not sorted by stage then id")
+            state.error(
+                leaf_path,
+                1,
+                f"records in ## {section_records[0].section if section_records else expected_kind} are not sorted by stage then id",
+            )
         return parsed
 
     return validate_section(k_records, "K"), validate_section(x_records, "X")
+
+
+def validate_stage_refs_coverage(
+    family_dir: Path,
+    stage_records: list[Record],
+    stage_ref_records: list[Record],
+    family_k_records_by_id: dict[str, Record],
+    expected_prefix: str,
+    state: LintState,
+) -> None:
+    if family_dir.name == "universal":
+        source_records = stage_records
+        stage_id_from_record = lambda record: record.record_id
+    else:
+        source_records = stage_ref_records
+        stage_id_from_record = lambda record: f"S{record.record_id[2:]}"
+
+    seen_refs: dict[str, Record] = {}
+    for record in source_records:
+        stage_id = stage_id_from_record(record)
+        stage_number = int(stage_id[1:])
+        for ref_id in parse_refs_field(record, expected_prefix, state):
+            previous = seen_refs.get(ref_id)
+            if previous is not None:
+                previous_stage = stage_id_from_record(previous)
+                state.error(
+                    record.file_path,
+                    record.line_number,
+                    f"refs entry {ref_id!r} already assigned to {previous_stage} in {previous.file_path.relative_to(ROOT)}:{previous.line_number}",
+                )
+                continue
+            seen_refs[ref_id] = record
+            target_record = family_k_records_by_id.get(ref_id)
+            if target_record is None:
+                state.error(record.file_path, record.line_number, f"refs entry {ref_id!r} does not exist in family leaves")
+                continue
+            target_stage = parse_stage(target_record, state)
+            if target_stage is not None and target_stage != stage_number:
+                state.error(
+                    record.file_path,
+                    record.line_number,
+                    f"refs entry {ref_id!r} is listed under {stage_id} but leaf record stage is {target_stage}",
+                )
+
+    missing_ids = sorted(set(family_k_records_by_id) - set(seen_refs))
+    for missing_id in missing_ids:
+        missing_record = family_k_records_by_id[missing_id]
+        state.error(
+            missing_record.file_path,
+            missing_record.line_number,
+            f"K id {missing_id!r} is missing from the family stage refs",
+        )
+
+
+def warn_stage_pipeline_summary_drift(stage_records: list[Record], state: LintState) -> None:
+    if not ROUTING_RULE_PATH.exists():
+        state.warning(ROUTING_RULE_PATH, 1, "missing .cursor stage pipeline summary surface")
+        return
+    summary_stage_ids: list[str] = []
+    for line in ROUTING_RULE_PATH.read_text(encoding="utf-8").splitlines():
+        match = RULE_STAGE_SUMMARY_RE.match(line.strip())
+        if match is not None:
+            summary_stage_ids.append(match.group(1))
+    pack_stage_ids = [record.record_id for record in stage_records]
+    if summary_stage_ids != pack_stage_ids:
+        state.warning(
+            ROUTING_RULE_PATH,
+            1,
+            "stage summary bullets drifted from the canonical universal stage ids",
+        )
 
 
 def lint_repo() -> int:
@@ -362,7 +580,7 @@ def lint_repo() -> int:
     for family_dir in family_dirs:
         index_path = family_dir / "pack.urf.md"
         index_records = parse_urf_file(index_path, state)
-        actual_leaf_names, leaf_registry, route_records = validate_index(family_dir, index_path, index_records, state)
+        index_validation = validate_index(family_dir, index_path, index_records, state)
 
         expected_prefix = FAMILY_PREFIXES.get(family_dir.name)
         if expected_prefix is None:
@@ -373,7 +591,7 @@ def lint_repo() -> int:
         family_numbers: dict[str, dict[int, Record]] = {"K": {}, "X": {}}
         leaf_records_by_name: dict[str, list[Record]] = {}
 
-        for leaf_name in sorted(actual_leaf_names):
+        for leaf_name in sorted(index_validation.actual_leaf_names):
             leaf_path = family_dir / leaf_name
             leaf_records = parse_urf_file(leaf_path, state)
             leaf_records_by_name[leaf_name] = leaf_records
@@ -386,6 +604,27 @@ def lint_repo() -> int:
                 state=state,
                 family_ids=family_ids,
             )
+
+            declared_stages = index_validation.leaf_declared_stages.get(leaf_name)
+            if declared_stages is not None:
+                actual_stages = {
+                    int(record.fields["stage"])
+                    for record in k_records.values()
+                    if record.fields.get("stage", "").isdigit()
+                }
+                if declared_stages != actual_stages:
+                    missing = sorted(actual_stages - declared_stages)
+                    spurious = sorted(declared_stages - actual_stages)
+                    details: list[str] = []
+                    if missing:
+                        details.append(f"missing stages {missing}")
+                    if spurious:
+                        details.append(f"declared stages without kernels {spurious}")
+                    state.error(
+                        leaf_path,
+                        1,
+                        f"## LEAVES stages= for {leaf_name!r} must equal the leaf's actual kernel stages ({', '.join(details)})",
+                    )
 
             for kind, section_records in (("K", k_records), ("X", x_records)):
                 for number, record in section_records.items():
@@ -401,9 +640,19 @@ def lint_repo() -> int:
 
         warn_unanchored_route_signals(
             family_dir=family_dir,
-            route_records=route_records,
-            leaf_registry=leaf_registry,
+            route_records=index_validation.route_records,
+            leaf_registry=index_validation.leaf_registry,
             leaf_records_by_name=leaf_records_by_name,
+            state=state,
+        )
+
+        family_k_records_by_id = {record.record_id: record for record in family_numbers["K"].values()}
+        validate_stage_refs_coverage(
+            family_dir=family_dir,
+            stage_records=index_validation.stage_records,
+            stage_ref_records=index_validation.stage_ref_records,
+            family_k_records_by_id=family_k_records_by_id,
+            expected_prefix=expected_prefix,
             state=state,
         )
 
@@ -411,6 +660,9 @@ def lint_repo() -> int:
             for number in sorted(set(family_numbers[kind]) - set(family_numbers[other_kind])):
                 record = family_numbers[kind][number]
                 state.error(record.file_path, record.line_number, f"{kind} suffix {number} has no mirrored {other_kind} entry in family {family_dir.name!r}")
+
+        if family_dir.name == "universal":
+            warn_stage_pipeline_summary_drift(index_validation.stage_records, state)
 
     if state.warnings:
         print("Warnings:")

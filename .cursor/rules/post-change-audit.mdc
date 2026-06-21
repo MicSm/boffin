@@ -1,14 +1,33 @@
 ---
-description: Re-check code diffs against loaded pack kernels after edits
+description: Pre-flight review and post-change kernel audit
 alwaysApply: true
 ---
 
-# Post-Change Kernel Audit
+# Pre-Flight Review and Post-Change Audit
 
-After any code edit:
+## Before presenting code-task results
 
-- MUST re-read the relevant loaded leaf pack(s) before judging the result; do not rely on memory.
-- MUST inspect the actual diff against both `## KERNELS` and `## EXCLUDES` in the loaded leaves.
-- MUST verify that every selected or claimed kernel is demonstrably satisfied by the diff, and that no exclusion pattern from the loaded leaves was introduced.
-- MUST fix any mismatch immediately or report the violated entry by `pack/scope` and the exact trade-off explicitly.
-- MUST keep the audit honest: if a loaded kernel was not materially relevant, omit it from the summary instead of citing it aspirationally.
+- Re-read the loaded pack index and all loaded leaf packs; do not rely on memory.
+- For a focused change, confirm you stayed within the requested scope and proved
+  the change with a check; the ledger checks below apply to refactor/review tasks.
+- For a refactor/review task, confirm the Pass 1 audit ledger lists a row for
+  every in-scope stage; a stage with no row is an incomplete audit, not a clean
+  file.
+- Confirm every ledger row is `done` or `skip`, that each `skip` carries a
+  reason, and that no row recorded as `todo` was downgraded to `skip:clean`.
+- Confirm every fix named in Pass 1 reasoning has its own ledger row; a fix
+  discussed but left unrecorded is an incomplete audit.
+- If a change touches ownership, lifecycle, completion semantics,
+  state-machine transitions, concurrent access, or logic currently encoded
+  through flags or sentinels, name the exact invariant from stages S01-S03 it
+  must preserve before editing.
+- On user request, render the ledger and the blocking earlier-stage invariants
+  as concise ordered bullets in the user's language.
+
+## After any code edit
+
+- MUST verify the edit with an external check (the narrowest test or lint that proves it), not by re-reading your own reasoning or the diff alone.
+- MUST review the change as if a different author wrote it: read the final file region, not only the diff, and ask what a fresh reviewer would flag.
+- MUST re-read the relevant loaded leaf pack(s) and confirm no `## EXCLUDES` pattern was introduced and no earlier-stage (S00-S03) invariant was weakened to satisfy a later-stage (S04-S06) cleanup goal.
+- MUST NOT silently drop a ledger finding: it ends as `done` (with its check) or `skip:<reason>`.
+- MUST present the filled ledger as the result; do not add rows for kernels that found nothing, and never cite a kernel a row does not actually rest on.

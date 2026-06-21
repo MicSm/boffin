@@ -1,6 +1,6 @@
 {
   "name": "parselfire",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Portable architectural guidance packs for AI coding agents.",
   "contextFileName": "AGENTS.md"
 }

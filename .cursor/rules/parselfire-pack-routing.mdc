@@ -1,9 +1,81 @@
 ---
-description: Thin ParselFire pack-index activation
+description: ParselFire pack activation and stage pipeline
 alwaysApply: true
 ---
 
 # ParselFire Pack Activation
+
+## Default Workflow
+
+First match scope to the task, then pick the path:
+
+- Focused change (the operator asked for a specific function, fix, or feature):
+  stay inside that scope. Make only the change requested, apply the stage
+  guidance to what you touch, and prove it with a check. Do not scan the whole
+  file or build a file-wide ledger; turning a scoped coding task into a
+  file-wide refactor breaks the task boundary and gets rejected.
+- Open-ended refactor, cleanup, or review of existing code: run the two-pass
+  audit below, scoped to what the task covers.
+
+Two-pass audit (refactor / review / cleanup). Never fix while you are still
+searching; the first strong improvement you find is not the finish line.
+
+Pass 1, Audit (read-only). Read the target across the task's scope. Walk stages
+S00 upward and emit a findings ledger that covers every in-scope stage,
+including stages with nothing to change. Do not edit anything in this pass. Use
+one row per finding:
+
+`path | stage | status | id | kernel | anchor | check`
+
+Columns: `path` the file touched; `stage` the S00-S06 stage; `status` `todo`,
+`done`, or `skip`; `id` the kernel id; `kernel` what it requires in one phrase;
+`anchor` the concrete code location the finding rests on; `check` the test or
+lint that proves it.
+
+- `status` is one of `todo`, `done`, `skip`, and every `skip` carries a reason.
+- Record every fix you name while auditing as its own row with all fields
+  filled, and resolve it as `done` or `skip:<reason>`; never leave a fix you
+  mentioned in reasoning off the ledger.
+- `skip:clean` means Pass 1 found nothing on that stage; every in-scope stage
+  still gets a row, never an omitted one.
+- A finding you deliberately will not act on is `skip:<reason>` whose reason
+  names the blocking kernel (for example, keeping a genuine special case instead
+  of flattening it), never `skip:clean`.
+- A row recorded as `todo` resolves only to `done` (with its check) or
+  `skip:<reason>`; never downgrade a `todo` to `skip:clean`.
+
+Pass 2, Apply. Drain the ledger one row at a time: make the single edit, run the
+narrowest check that proves it (a test or a lint), then mark the row `done` with
+how it was checked. Do not batch unrelated findings into one sweep.
+
+The task is complete only when every ledger row is `done` or `skip` and the
+checks are green, not when the first improvement lands.
+
+Minimalism still governs what you ADD (no speculative abstractions, no
+unrequested files, prefer the simplest correct change), but it never licenses
+dropping a stage, a trust-boundary validation, data-loss prevention, security,
+or accessibility. Non-trivial logic leaves one minimal runnable check behind.
+
+## Stage Pipeline
+
+Walk stages from S00 upward when reasoning about code changes. Earlier stages
+override later ones on conflict. At each stage, inspect matching EXCLUDES first
+as a rejection filter, then matching KERNELS as positive guidance. Use the
+universal stage `refs=` and the loaded language-family `## STAGE-REFS` to know
+which K ids belong to the current stage. Each `## LEAVES` record declares the
+`stages=` it carries; to cover the current stage, load every leaf whose
+`stages=` includes it. Stage-to-leaf resolution is a direct index lookup, never
+a filesystem search.
+
+- S00 scope: stay within requested scope and keep blast radius low
+- S01 invariants: prove exact invariants, preserve true special cases, obey contracts
+- S02 state modeling: make meaningful states explicit, keep distinct outcomes distinct
+- S03 lifecycle: centralize mutable state, clarify ownership, rebuild atomically
+- S04 shared abstractions: extract shared invariants only after semantics are clear
+- S05 boundaries: make subsystem boundaries explicit, thread semantics end to end
+- S06 convergence: converge broadly, remove displaced layers
+
+## Loading
 
 Before reading, editing, reviewing, or refactoring code:
 
@@ -15,10 +87,15 @@ Before reading, editing, reviewing, or refactoring code:
 - For `.h` files: inspect content; load cpp-architecture only if C++ constructs are present.
 - Otherwise stay on the universal index only.
 - Use loaded pack indexes as the routing surface for leaf selection.
-- From `## ROUTING`, match `signals` against the active code context and read exactly one leaf per family (two only when the change truly crosses themes).
+- From `## ROUTING`, match `signals` against the active code context to select your primary leaf per family.
+- STAGE-WALK REQUIREMENT: You cannot safely perform late-stage refactoring (S04-S06) without an early-stage rejection filter. If your primary signal match is a late-stage leaf (for example, `shared-abstractions.urf.md`), you MUST ALSO load at least one early-stage correctness leaf (S01-S03); pick it from `## LEAVES` by choosing a leaf whose `stages=` includes the early stage your code's mechanics touch.
+- To cover a stage whose `refs=` ids are not in your loaded leaves, read `## LEAVES` and load every leaf whose `stages=` includes that stage; resolve coverage from the index, not by searching the `packs/` directory.
+- Coding vs review dose: for a focused coding change, load the primary seam leaf, the mandatory early-stage filter, and any additional leaves whose `stages=` are needed to complete the stages you actually walk. For a pure review, audit, or compliance task with no single edit seam, load one leaf per stage-family the file's mechanics actually touch across S01-S05 because review needs width across stages, not a single dose.
 
 After loading leaves:
 
-- Select 3-5 total K/X entries with stage-aligned preference.
+- Walk the loaded stages S00 upward, inspecting X first and K second at each stage, before deciding what to apply.
+- The 3-5 entry budget is the dose you materially apply in a focused coding change; it is not a cap on the stage-walk. Always walk every loaded stage first, then settle on the 3-5 entries you act on. In review mode, cite every stage where a real finding exists rather than truncating to 3-5.
+- Use stage order, not signal strength, to decide which loaded entries get checked first.
 - Reference guidance by `pack/scope`; use namespaced ids only when compact pairing helps.
 - Never paste pack text verbatim into code or comments.
