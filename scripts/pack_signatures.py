@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -127,7 +128,7 @@ _GPG_INFORMATIONAL_PREFIXES = (
 
 def _is_gpg_informational(line: str) -> bool:
     lowered = line.lower()
-    if any(lowered.startswith(p) for p in _GPG_INFORMATIONAL_PREFIXES):
+    if any(lowered.startswith(prefix) for prefix in _GPG_INFORMATIONAL_PREFIXES):
         return True
     if lowered.startswith("gpg:") and _looks_like_timestamp_line(lowered):
         return True
@@ -226,22 +227,40 @@ def print_result(result: OperationResult, *, quiet_success: bool) -> None:
     print(f"[{status}] {relative_path(result.file_path)} - {result.message}")
 
 
-def run_verify(file_paths: list[Path], *, gpg_bin: str, quiet_success: bool) -> int:
-    ensure_gpg_available(gpg_bin)
-
+def process_files(
+    file_paths: list[Path],
+    *,
+    quiet_success: bool,
+    operation: Callable[[Path], OperationResult],
+    failure_summary: Callable[[int, int], str],
+    success_summary: Callable[[int], str],
+) -> int:
     failures = 0
     for file_path in file_paths:
-        result = verify_file(file_path, gpg_bin)
+        result = operation(file_path)
         print_result(result, quiet_success=quiet_success)
         if not result.ok:
             failures += 1
 
     if failures:
-        print(f"Verification failed: {failures} of {len(file_paths)} files did not verify.")
+        print(failure_summary(failures, len(file_paths)))
         return 1
 
-    print(f"Verification succeeded: {len(file_paths)} files verified.")
+    print(success_summary(len(file_paths)))
     return 0
+
+
+def run_verify(file_paths: list[Path], *, gpg_bin: str, quiet_success: bool) -> int:
+    ensure_gpg_available(gpg_bin)
+    return process_files(
+        file_paths,
+        quiet_success=quiet_success,
+        operation=lambda file_path: verify_file(file_path, gpg_bin),
+        failure_summary=lambda failures, total: (
+            f"Verification failed: {failures} of {total} files did not verify."
+        ),
+        success_summary=lambda total: f"Verification succeeded: {total} files verified.",
+    )
 
 
 def run_sign(
@@ -256,30 +275,25 @@ def run_sign(
     if not dry_run:
         ensure_gpg_available(gpg_bin)
 
-    failures = 0
-    for file_path in file_paths:
-        result = sign_file(
+    return process_files(
+        file_paths,
+        quiet_success=quiet_success,
+        operation=lambda file_path: sign_file(
             file_path,
             gpg_bin=gpg_bin,
             key=key,
             passphrase=passphrase,
             dry_run=dry_run,
-        )
-        print_result(result, quiet_success=quiet_success)
-        if not result.ok:
-            failures += 1
-
-    if failures:
-        action = "sign" if not dry_run else "plan"
-        print(f"{action.capitalize()} failed: {failures} of {len(file_paths)} files could not be processed.")
-        return 1
-
-    if dry_run:
-        print(f"Dry run succeeded: {len(file_paths)} files would be signed.")
-        return 0
-
-    print(f"Signing succeeded: {len(file_paths)} files signed.")
-    return 0
+        ),
+        failure_summary=lambda failures, total: (
+            f"{'Plan' if dry_run else 'Sign'} failed: {failures} of {total} files could not be processed."
+        ),
+        success_summary=lambda total: (
+            f"Dry run succeeded: {total} files would be signed."
+            if dry_run
+            else f"Signing succeeded: {total} files signed."
+        ),
+    )
 
 
 def _resolve_passphrase(args: argparse.Namespace) -> str | None:

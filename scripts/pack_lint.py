@@ -58,6 +58,36 @@ class LintState:
     def warning(self, path: Path, line_number: int, message: str) -> None:
         self.warnings.append(f"{path.relative_to(ROOT)}:{line_number}: {message}")
 
+    def error_at(self, record: Record, message: str) -> None:
+        self.error(record.file_path, record.line_number, message)
+
+    def warning_at(self, record: Record, message: str) -> None:
+        self.warning(record.file_path, record.line_number, message)
+
+
+def _split_semicolon_tokens(
+    raw: str | None,
+    *,
+    record: Record,
+    field_name: str,
+    state: LintState,
+) -> list[str]:
+    if not raw:
+        state.error_at(record, f"record is missing {field_name}=")
+        return []
+    tokens: list[str] = []
+    for token in raw.split(";"):
+        if not token:
+            state.error_at(record, f"{field_name} contains an empty token")
+            continue
+        tokens.append(token)
+    return tokens
+
+
+def _require_ascending(values: list[int], *, record: Record, label: str, state: LintState) -> None:
+    if values and values != sorted(values):
+        state.error_at(record, label)
+
 
 def parse_urf_file(path: Path, state: LintState) -> list[Record]:
     records: list[Record] = []
@@ -102,15 +132,15 @@ def parse_urf_file(path: Path, state: LintState) -> list[Record]:
 def parse_stage(record: Record, state: LintState) -> int | None:
     raw_stage = record.fields.get("stage")
     if raw_stage is None:
-        state.error(record.file_path, record.line_number, "missing stage field")
+        state.error_at(record, "missing stage field")
         return None
     try:
         stage = int(raw_stage)
     except ValueError:
-        state.error(record.file_path, record.line_number, f"invalid stage value {raw_stage!r}")
+        state.error_at(record, f"invalid stage value {raw_stage!r}")
         return None
     if stage < 0 or stage > 6:
-        state.error(record.file_path, record.line_number, f"stage {stage} is outside 0..6")
+        state.error_at(record, f"stage {stage} is outside 0..6")
         return None
     return stage
 
@@ -118,75 +148,74 @@ def parse_stage(record: Record, state: LintState) -> int | None:
 def parse_pair_id(record: Record, state: LintState) -> tuple[str, str, int] | None:
     match = PAIR_ID_RE.match(record.record_id)
     if not match:
-        state.error(record.file_path, record.line_number, f"invalid K/X id {record.record_id!r}")
+        state.error_at(record, f"invalid K/X id {record.record_id!r}")
         return None
     return match.group("prefix"), match.group("kind"), int(match.group("number"))
 
 
 def parse_refs_field(record: Record, expected_prefix: str, state: LintState) -> list[str]:
-    refs_value = record.fields.get("refs")
-    if not refs_value:
-        state.error(record.file_path, record.line_number, "record is missing refs=")
-        return []
-    refs = refs_value.split(";")
     seen: set[str] = set()
     ordered_numbers: list[int] = []
     parsed_refs: list[str] = []
-    for ref in refs:
-        if not ref:
-            state.error(record.file_path, record.line_number, "refs contain an empty token")
-            continue
+    for ref in _split_semicolon_tokens(
+        record.fields.get("refs"),
+        record=record,
+        field_name="refs",
+        state=state,
+    ):
         match = PAIR_ID_RE.match(ref)
         if match is None:
-            state.error(record.file_path, record.line_number, f"refs entry {ref!r} is not a valid K id")
+            state.error_at(record, f"refs entry {ref!r} is not a valid K id")
             continue
         prefix = match.group("prefix")
         kind = match.group("kind")
         number = int(match.group("number"))
         if kind != "K":
-            state.error(record.file_path, record.line_number, f"refs entry {ref!r} must point to a K id")
+            state.error_at(record, f"refs entry {ref!r} must point to a K id")
         if prefix != expected_prefix:
-            state.error(
-                record.file_path,
-                record.line_number,
-                f"refs entry {ref!r} does not match family prefix {expected_prefix!r}",
-            )
+            state.error_at(record, f"refs entry {ref!r} does not match family prefix {expected_prefix!r}")
         if ref in seen:
-            state.error(record.file_path, record.line_number, f"refs entry {ref!r} is duplicated")
+            state.error_at(record, f"refs entry {ref!r} is duplicated")
             continue
         seen.add(ref)
         ordered_numbers.append(number)
         parsed_refs.append(ref)
-    if ordered_numbers and ordered_numbers != sorted(ordered_numbers):
-        state.error(record.file_path, record.line_number, "refs ids must be sorted by numeric suffix")
+    _require_ascending(
+        ordered_numbers,
+        record=record,
+        label="refs ids must be sorted by numeric suffix",
+        state=state,
+    )
     return parsed_refs
 
 
 def parse_stage_list_field(record: Record, field: str, state: LintState) -> set[int]:
-    raw = record.fields.get(field)
-    if not raw:
-        state.error(record.file_path, record.line_number, f"record is missing {field}=")
-        return set()
     seen_order: list[int] = []
     result: set[int] = set()
-    for part in raw.split(";"):
-        if not part:
-            state.error(record.file_path, record.line_number, f"{field} contains an empty token")
-            continue
+    for part in _split_semicolon_tokens(
+        record.fields.get(field),
+        record=record,
+        field_name=field,
+        state=state,
+    ):
         if not part.isdigit():
-            state.error(record.file_path, record.line_number, f"{field} entry {part!r} is not an integer")
+            state.error_at(record, f"{field} entry {part!r} is not an integer")
             continue
         value = int(part)
         if value < 0 or value > 6:
-            state.error(record.file_path, record.line_number, f"{field} entry {value} is outside 0..6")
+            state.error_at(record, f"{field} entry {value} is outside 0..6")
             continue
         if value in result:
-            state.error(record.file_path, record.line_number, f"{field} entry {value} is duplicated")
+            state.error_at(record, f"{field} entry {value} is duplicated")
             continue
         result.add(value)
         seen_order.append(value)
-    if seen_order != sorted(seen_order):
-        state.error(record.file_path, record.line_number, f"{field} values must be ascending")
+    _require_ascending(
+        seen_order,
+        record=record,
+        label=f"{field} values must be ascending",
+        state=state,
+    )
     return result
 
 
@@ -212,20 +241,20 @@ def normalize_text(text: str) -> str:
 def validate_signals(record: Record, state: LintState) -> list[str]:
     signals_value = record.fields.get("signals", "")
     if not signals_value:
-        state.error(record.file_path, record.line_number, "routing record is missing signals")
+        state.error_at(record, "routing record is missing signals")
         return []
     signals = signals_value.split(",")
     seen_local: set[str] = set()
     for signal in signals:
         if not signal:
-            state.error(record.file_path, record.line_number, "signals contain an empty token")
+            state.error_at(record, "signals contain an empty token")
             continue
         if signal in seen_local:
-            state.error(record.file_path, record.line_number, f"signals repeat {signal!r} inside one route")
+            state.error_at(record, f"signals repeat {signal!r} inside one route")
             continue
         seen_local.add(signal)
         if not LOWER_SIGNAL_RE.match(signal):
-            state.error(record.file_path, record.line_number, f"signal {signal!r} must be lowercase literal text")
+            state.error_at(record, f"signal {signal!r} must be lowercase literal text")
     return signals
 
 
@@ -235,7 +264,7 @@ def validate_dense_sequence(index_path: Path, records: list[Record], kind: str, 
     numbers: list[int] = []
     for record in records:
         if not record.record_id.startswith(kind) or not record.record_id[1:].isdigit():
-            state.error(record.file_path, record.line_number, f"invalid {kind} id {record.record_id!r}")
+            state.error_at(record, f"invalid {kind} id {record.record_id!r}")
             continue
         numbers.append(int(record.record_id[1:]))
     if not numbers:
@@ -262,24 +291,24 @@ def validate_universal_stage_section(
         )
     for record in directive_records:
         if not DIRECTIVE_ID_RE.match(record.record_id):
-            state.error(record.file_path, record.line_number, f"invalid directive id {record.record_id!r}")
+            state.error_at(record, f"invalid directive id {record.record_id!r}")
         if not record.tokens:
-            state.error(record.file_path, record.line_number, "directive must include at least one payload token")
+            state.error_at(record, "directive must include at least one payload token")
 
     actual_stage_ids = [record.record_id for record in stage_records]
     if actual_stage_ids != EXPECTED_STAGE_IDS:
         state.error(index_path, 1, "## STAGES must contain S00 through S06 in order")
     for record in stage_records:
         if not STAGE_ID_RE.match(record.record_id):
-            state.error(record.file_path, record.line_number, f"invalid stage id {record.record_id!r}")
+            state.error_at(record, f"invalid stage id {record.record_id!r}")
         if "name" not in record.fields:
-            state.error(record.file_path, record.line_number, "stage record is missing name=")
+            state.error_at(record, "stage record is missing name=")
         if "focus" not in record.fields:
-            state.error(record.file_path, record.line_number, "stage record is missing focus=")
+            state.error_at(record, "stage record is missing focus=")
         if "refs" not in record.fields:
-            state.error(record.file_path, record.line_number, "stage record is missing refs=")
+            state.error_at(record, "stage record is missing refs=")
         if "question" in record.fields:
-            state.error(record.file_path, record.line_number, "stage record must use focus= instead of question=")
+            state.error_at(record, "stage record must use focus= instead of question=")
 
 
 def validate_stage_ref_section(index_path: Path, stage_ref_records: list[Record], state: LintState) -> None:
@@ -294,9 +323,9 @@ def validate_stage_ref_section(index_path: Path, stage_ref_records: list[Record]
         state.error(index_path, 1, "## STAGE-REFS ids must be unique")
     for record in stage_ref_records:
         if not STAGE_REF_ID_RE.match(record.record_id):
-            state.error(record.file_path, record.line_number, f"invalid stage-ref id {record.record_id!r}")
+            state.error_at(record, f"invalid stage-ref id {record.record_id!r}")
         if "refs" not in record.fields:
-            state.error(record.file_path, record.line_number, "stage-ref record is missing refs=")
+            state.error_at(record, "stage-ref record is missing refs=")
 
 
 def build_leaf_anchor_text(leaf_path: Path, leaf_records: list[Record], theme: str) -> str:
@@ -327,9 +356,8 @@ def warn_unanchored_route_signals(
         )
         for signal in route_record.fields.get("signals", "").split(","):
             if normalize_text(signal) not in anchor_text:
-                state.warning(
-                    route_record.file_path,
-                    route_record.line_number,
+                state.warning_at(
+                    route_record,
                     f"signal {signal!r} has no literal anchor in {leaf_name!r}; consider a more specific selector",
                 )
 
@@ -367,17 +395,16 @@ def validate_index(
 
     for record in route_records:
         if not ROUTING_ID_RE.match(record.record_id) or not record.record_id.startswith("R"):
-            state.error(record.file_path, record.line_number, f"invalid routing id {record.record_id!r}")
+            state.error_at(record, f"invalid routing id {record.record_id!r}")
         has_leaf = "leaf" in record.fields
         has_pack = "pack" in record.fields
         if has_leaf == has_pack:
-            state.error(record.file_path, record.line_number, "routing record must contain exactly one of leaf= or pack=")
+            state.error_at(record, "routing record must contain exactly one of leaf= or pack=")
         for signal in validate_signals(record, state):
             previous = used_signals.get(signal)
             if previous is not None:
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                state.error_at(
+                    record,
                     f"signal {signal!r} already used by {previous.record_id} in {previous.fields.get('leaf', previous.fields.get('pack', 'unknown'))}",
                 )
             else:
@@ -387,27 +414,27 @@ def validate_index(
             target_path = family_dir / leaf_name
             route_targets.add(leaf_name)
             if not target_path.exists():
-                state.error(record.file_path, record.line_number, f"leaf target {leaf_name!r} does not exist")
+                state.error_at(record, f"leaf target {leaf_name!r} does not exist")
         if has_pack:
             target = record.fields["pack"]
             if resolve_pack_target(family_dir, target) is None:
-                state.error(record.file_path, record.line_number, f"pack target {target!r} does not exist")
+                state.error_at(record, f"pack target {target!r} does not exist")
 
     for record in leaf_records:
         if not ROUTING_ID_RE.match(record.record_id) or not record.record_id.startswith("L"):
-            state.error(record.file_path, record.line_number, f"invalid leaf id {record.record_id!r}")
+            state.error_at(record, f"invalid leaf id {record.record_id!r}")
         leaf_name = record.fields.get("file")
         if not leaf_name:
-            state.error(record.file_path, record.line_number, "leaf registry entry is missing file=")
+            state.error_at(record, "leaf registry entry is missing file=")
             continue
         registry_targets.add(leaf_name)
         leaf_registry[leaf_name] = record
         if not (family_dir / leaf_name).exists():
-            state.error(record.file_path, record.line_number, f"leaf registry target {leaf_name!r} does not exist")
+            state.error_at(record, f"leaf registry target {leaf_name!r} does not exist")
         if "theme" not in record.fields:
-            state.error(record.file_path, record.line_number, "leaf registry entry is missing theme=")
+            state.error_at(record, "leaf registry entry is missing theme=")
         if "stages" not in record.fields:
-            state.error(record.file_path, record.line_number, "leaf registry entry is missing stages=")
+            state.error_at(record, "leaf registry entry is missing stages=")
         else:
             leaf_declared_stages[leaf_name] = parse_stage_list_field(record, "stages", state)
 
@@ -458,34 +485,31 @@ def validate_leaf(
                 continue
             prefix, kind, number = pair_id
             if prefix != expected_prefix:
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                state.error_at(
+                    record,
                     f"id prefix {prefix!r} does not match family {family_name!r} prefix {expected_prefix!r}",
                 )
             if kind != expected_kind:
-                state.error(record.file_path, record.line_number, f"record is in ## {record.section} but id kind is {kind}")
+                state.error_at(record, f"record is in ## {record.section} but id kind is {kind}")
             if "scope" not in record.fields:
-                state.error(record.file_path, record.line_number, f"{record.record_id} is missing required scope= field")
+                state.error_at(record, f"{record.record_id} is missing required scope= field")
             if text_field not in record.fields:
-                state.error(record.file_path, record.line_number, f"{record.record_id} is missing required {text_field}= field")
+                state.error_at(record, f"{record.record_id} is missing required {text_field}= field")
             stage = parse_stage(record, state)
             if stage is None:
                 continue
             if record.record_id in family_ids:
                 previous = family_ids[record.record_id]
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                state.error_at(
+                    record,
                     f"id {record.record_id!r} already used in {previous.file_path.relative_to(ROOT)}:{previous.line_number}",
                 )
             else:
                 family_ids[record.record_id] = record
             if number in parsed:
                 previous = parsed[number]
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                state.error_at(
+                    record,
                     f"numeric suffix {number} already used by {previous.record_id!r} in this section",
                 )
             else:
@@ -502,6 +526,12 @@ def validate_leaf(
     return validate_section(k_records, "K"), validate_section(x_records, "X")
 
 
+def _stage_id_for_ref_record(family_dir: Path, record: Record) -> str:
+    if family_dir.name == "universal":
+        return record.record_id
+    return f"S{record.record_id[2:]}"
+
+
 def validate_stage_refs_coverage(
     family_dir: Path,
     stage_records: list[Record],
@@ -510,48 +540,37 @@ def validate_stage_refs_coverage(
     expected_prefix: str,
     state: LintState,
 ) -> None:
-    if family_dir.name == "universal":
-        source_records = stage_records
-        stage_id_from_record = lambda record: record.record_id
-    else:
-        source_records = stage_ref_records
-        stage_id_from_record = lambda record: f"S{record.record_id[2:]}"
+    source_records = stage_records if family_dir.name == "universal" else stage_ref_records
 
     seen_refs: dict[str, Record] = {}
     for record in source_records:
-        stage_id = stage_id_from_record(record)
+        stage_id = _stage_id_for_ref_record(family_dir, record)
         stage_number = int(stage_id[1:])
         for ref_id in parse_refs_field(record, expected_prefix, state):
             previous = seen_refs.get(ref_id)
             if previous is not None:
-                previous_stage = stage_id_from_record(previous)
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                previous_stage = _stage_id_for_ref_record(family_dir, previous)
+                state.error_at(
+                    record,
                     f"refs entry {ref_id!r} already assigned to {previous_stage} in {previous.file_path.relative_to(ROOT)}:{previous.line_number}",
                 )
                 continue
             seen_refs[ref_id] = record
             target_record = family_k_records_by_id.get(ref_id)
             if target_record is None:
-                state.error(record.file_path, record.line_number, f"refs entry {ref_id!r} does not exist in family leaves")
+                state.error_at(record, f"refs entry {ref_id!r} does not exist in family leaves")
                 continue
             target_stage = parse_stage(target_record, state)
             if target_stage is not None and target_stage != stage_number:
-                state.error(
-                    record.file_path,
-                    record.line_number,
+                state.error_at(
+                    record,
                     f"refs entry {ref_id!r} is listed under {stage_id} but leaf record stage is {target_stage}",
                 )
 
     missing_ids = sorted(set(family_k_records_by_id) - set(seen_refs))
     for missing_id in missing_ids:
         missing_record = family_k_records_by_id[missing_id]
-        state.error(
-            missing_record.file_path,
-            missing_record.line_number,
-            f"K id {missing_id!r} is missing from the family stage refs",
-        )
+        state.error_at(missing_record, f"K id {missing_id!r} is missing from the family stage refs")
 
 
 def warn_stage_pipeline_summary_drift(stage_records: list[Record], state: LintState) -> None:
@@ -570,6 +589,24 @@ def warn_stage_pipeline_summary_drift(stage_records: list[Record], state: LintSt
             1,
             "stage summary bullets drifted from the canonical universal stage ids",
         )
+
+
+def _finish_lint(state: LintState, *, family_count: int, leaf_count: int) -> int:
+    if state.warnings:
+        print("Warnings:")
+        for warning in state.warnings:
+            print(f"  - {warning}")
+
+    if state.errors:
+        print("Errors:")
+        for error in state.errors:
+            print(f"  - {error}")
+        return 1
+
+    print(f"OK: validated {family_count} families and {leaf_count} leaf files.")
+    if state.warnings:
+        print(f"Warnings: {len(state.warnings)}")
+    return 0
 
 
 def lint_repo() -> int:
@@ -630,9 +667,8 @@ def lint_repo() -> int:
                 for number, record in section_records.items():
                     previous = family_numbers[kind].get(number)
                     if previous is not None:
-                        state.error(
-                            record.file_path,
-                            record.line_number,
+                        state.error_at(
+                            record,
                             f"{kind} suffix {number} already used in {previous.file_path.relative_to(ROOT)}:{previous.line_number}",
                         )
                     else:
@@ -659,26 +695,12 @@ def lint_repo() -> int:
         for kind, other_kind in (("K", "X"), ("X", "K")):
             for number in sorted(set(family_numbers[kind]) - set(family_numbers[other_kind])):
                 record = family_numbers[kind][number]
-                state.error(record.file_path, record.line_number, f"{kind} suffix {number} has no mirrored {other_kind} entry in family {family_dir.name!r}")
+                state.error_at(record, f"{kind} suffix {number} has no mirrored {other_kind} entry in family {family_dir.name!r}")
 
         if family_dir.name == "universal":
             warn_stage_pipeline_summary_drift(index_validation.stage_records, state)
 
-    if state.warnings:
-        print("Warnings:")
-        for warning in state.warnings:
-            print(f"  - {warning}")
-
-    if state.errors:
-        print("Errors:")
-        for error in state.errors:
-            print(f"  - {error}")
-        return 1
-
-    print(f"OK: validated {len(family_dirs)} families and {validated_leaf_count} leaf files.")
-    if state.warnings:
-        print(f"Warnings: {len(state.warnings)}")
-    return 0
+    return _finish_lint(state, family_count=len(family_dirs), leaf_count=validated_leaf_count)
 
 
 if __name__ == "__main__":
