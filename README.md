@@ -13,6 +13,12 @@
   <a href="#how-it-works-under-the-hood">How It Works</a>
 </p>
 
+> **This is not just another `AGENTS.md` with a "daily routine" for your LLM.**
+>
+> We use text rules to force the LLM's attention to stop on the exact code details that must not be broken (or must be applied) right at the moment of the edit. 
+>
+> These are our invariants, stored in pack files, so ANY LLM can use them to improve your code without destroying your architecture.
+
 AI agents write code fast but forget your architecture between sessions. They
 duplicate logic you deliberately extracted, flatten special cases you preserved
 on purpose, and drift away from boundaries that took months to establish.
