@@ -10,3 +10,4 @@ For Python source:
 
 - Load `packs/python-architecture/pack.urf.md`.
 - Use its `## ROUTING` and `## LEAVES` records for leaf selection.
+- Use its `## STAGE-REFS` records to gather the family K ids (and their mirrored X ids) at each stage of the walk.

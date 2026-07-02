@@ -12,7 +12,7 @@ Legend: `id | stage | scope | rule` means a stable record id, stage number, shor
 - `core.urf.md`: S01 language-mechanics rules
 - `contracts.urf.md`: S01 typed-boundary and contract rules
 - `state-modeling.urf.md`: S02 state and outcome modeling rules
-- `concurrency.urf.md`: S01-S03 memory ordering, thread, and publication rules
+- `concurrency.urf.md`: S01 and S03 memory ordering, thread, and publication rules
 - `lifecycle.urf.md`: S03 ownership, worker, and RAII lifecycle rules
 - `shared.urf.md`: S04 shared abstraction and helper rules
 - `boundaries.urf.md`: S05-S06 subsystem boundary and convergence rules

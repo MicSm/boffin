@@ -188,18 +188,19 @@ For a focused coding task, the agent usually reads:
 
 - one universal index
 - one primary universal leaf for the seam it is working on
-- any additional universal leaves whose `stages=` are required by the stages it
-  actually walks
+- any additional universal leaves whose `stages=` are required by the stages
+  the change's mechanics actually touch (untouched stages are cleared on the
+  index `focus=` lines alone)
 - when the seam is a late-stage refactor (S04-S06), at least one early-stage
   correctness leaf (S01-S03), plus any other leaves required to complete that
   early stage, as a rejection filter
 - zero or one language-family index + zero or more language leaves required by
-  the same walked stages
+  the same touched stages
 - total: still a small routed read set, not the entire repository
 
 For an open-ended refactor, review, or compliance pass, the agent widens the
 read surface to one leaf per stage-family the file's mechanics actually touch
-across S01-S05, because review needs width rather than a single seam.
+across S00-S06, because review needs width rather than a single seam.
 
 While reasoning, the agent walks stages S00-S06 in order. At each stage it
 checks matching `X` entries first as rejection filters and matching `K` entries

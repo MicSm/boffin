@@ -20,9 +20,9 @@ The universal index carries the shared stage model plus compact routing records.
 ```text
 ## STAGES
 !PURPOSE|turn loaded kernels into a correctness-first decision pipeline that favors consistent code over flat checklist application
-!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
+!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; each K id has a mirrored X id with the same numeric suffix in the same leaf, so the same refs locate the stage's EXCLUDES; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
 !ANTI|consult EXCLUDES at the current stage before reaching for later-stage refactors
-!SHOW|on user request|render the active stages selected K/X entries and blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
+!SHOW|on user request|render the active stages, the selected K/X entries, and the blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
 S00|name=scope-and-need|focus=stay within requested scope and keep blast radius low without compromising semantic preservation|refs=UNI-K01;UNI-K02;UNI-K03;UNI-K04
 
 ## ROUTING
@@ -90,6 +90,8 @@ UNI-X01|stage=0|scope=premature-custom-code|violation=do not write new code when
 - entries must reference public architectural guidance only
 - no non-public infrastructure names or undistributable implementation details
 - no literal reuse from non-public source surfaces
+- K/X mirror pairs share the same numeric suffix, the same stage, and the same
+  leaf file
 - family indexes should stay small enough to review quickly
 - the universal index is the canonical stage-pipeline surface and must carry `!PURPOSE`, `!APPLY`, `!ANTI`, and `!SHOW`
 - universal `S` records use `focus=` and `refs=` rather than `question=`
@@ -107,4 +109,4 @@ Run the repository validator after editing pack surfaces:
 python scripts/pack_lint.py
 ```
 
-The validator is zero-dependency and checks family-index signal collisions, universal stage directives, universal `S` definitions, family `SR` coverage, `refs=` completeness and sorting, `## LEAVES` `stages=` equality with actual leaf kernel stages, route and leaf references, K/X mirror numbering, and stage/id ordering. It also emits warnings when route signals drift away from their target leaf content and when the always-on stage summary drifts away from the universal `focus=` lines.
+The validator is zero-dependency and checks family-index signal collisions, universal stage directives, universal `S` definitions, family `SR` coverage, `refs=` completeness and sorting, `## LEAVES` `stages=` equality with actual leaf kernel stages, route and leaf references, K/X mirror numbering plus mirror stage and leaf co-location, per-family `scope` repetition limits, and stage/id ordering. It also emits warnings when route signals drift away from their target leaf content, when a `scope` repeats within one family, and when the stage summary bullets in the always-on rule or the portable contract drift away from the canonical universal stage list.
