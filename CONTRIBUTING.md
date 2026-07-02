@@ -49,7 +49,9 @@ When changing files under `packs/`:
    index.
 2. Keep one distinct architectural idea per K or X line when possible.
 3. Preserve mirror numbering: `K17` and `X17` should describe the same theme
-   from positive and negative sides.
+   from positive and negative sides, sit at the same stage, and live in the
+   same leaf file. The runtime stage walk finds EXCLUDES through this mirror
+   rule, so a split or re-staged mirror silently hides its X entry.
 4. Keep leaf records sorted by `stage` first and id second.
 5. Keep exact `signals=` tokens unique within one family index.
 6. Keep universal `S` `refs=` and language-family `SR` `refs=` complete and
@@ -58,7 +60,10 @@ When changing files under `packs/`:
    A leaf file missing from `## LEAVES` is a structural error because stage
    resolution depends on that registry.
 7. Use stable architectural nouns in `scope=`; avoid transient file and helper
-   names unless they define a durable boundary.
+   names unless they define a durable boundary. Keep each `scope` unique within
+   its family where possible: sharing one scope across 2-5 entries is allowed
+   for genuine facets but draws a validator warning as a deliberate deviation
+   from the unique retrieval-key ideal, and more than 5 is an error.
 8. Keep public packs portable. If a pattern is too domain-specific or too
    sensitive for the shipped core families, move it out of the core surface.
 9. Treat pack index changes, matching public docs/spec updates, extractor

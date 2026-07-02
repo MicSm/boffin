@@ -70,9 +70,9 @@ stage pipeline is used at runtime:
 
 ```text
 !PURPOSE|turn loaded kernels into a correctness-first decision pipeline that favors consistent code over flat checklist application
-!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
+!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; each K id has a mirrored X id with the same numeric suffix in the same leaf, so the same refs locate the stage's EXCLUDES; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
 !ANTI|consult EXCLUDES at the current stage before reaching for later-stage refactors
-!SHOW|on user request|render the active stages selected K/X entries and blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
+!SHOW|on user request|render the active stages, the selected K/X entries, and the blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
 ```
 
 The current public profile requires exactly these four directives in
@@ -177,7 +177,9 @@ K/X ids are unique across families by namespace prefix:
 Conventions:
 
 - future families should choose a short stable namespace prefix when introduced
-- K/X mirror pairs should share the same numeric suffix
+- K/X mirror pairs share the same numeric suffix, sit at the same stage, and
+  live in the same leaf file; the runtime stage walk relies on this to find the
+  EXCLUDES from stage `refs=` alone, and the validator enforces it
 - numeric suffixes should stay unique within a family
 - family prefixes should stay stable even when entries move between leaf files
 - `R` and `L` ids only need to stay unique within one index surface
@@ -190,6 +192,7 @@ Conventions:
 - exact `signals` tokens must not repeat within one family index surface
 - `theme` should be a short stable label, not a paragraph
 - a given `scope` should normally appear once per family and may appear on up to 5 entries within one family when several facets need separate statements
+- any `scope` repeat is a deliberate deviation from the unique retrieval-key ideal: repeated scopes dilute retrieval and make `pack/scope` citations ambiguous, so the validator warns on 2-5 occurrences and rejects more than 5
 - prefer one distinct architectural theme per entry
 - use stable architectural nouns, not transient file or function names, unless those names define a durable boundary
 - keep guidance text concise and directly actionable
@@ -262,4 +265,4 @@ The repository ships with a zero-dependency validator:
 python scripts/pack_lint.py
 ```
 
-It enforces exact signal uniqueness within each family index together with universal stage directives, universal `S` definitions, family `SR` coverage, `refs=` completeness and sorting, `## LEAVES` `stages=` equality with actual leaf kernel stages, route targets, leaf registry references, K/X mirror numbering, and stage-sorted leaf ordering. It also emits warnings when a route signal drifts away from its target leaf or when the always-on stage summary drifts away from the canonical universal `focus=` lines.
+It enforces exact signal uniqueness within each family index together with universal stage directives, universal `S` definitions, family `SR` coverage, `refs=` completeness and sorting, `## LEAVES` `stages=` equality with actual leaf kernel stages, route targets, leaf registry references, K/X mirror numbering plus mirror stage and leaf co-location, per-family `scope` repetition limits, and stage-sorted leaf ordering. It also emits warnings when a route signal drifts away from its target leaf, when a `scope` repeats within one family, or when the stage summary bullets in the always-on rule or the portable contract drift away from the canonical universal stage list.

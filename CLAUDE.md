@@ -60,10 +60,12 @@ Walk stages from S00 upward when reasoning about code changes. Earlier stages
 override later ones on conflict. At each stage, inspect matching EXCLUDES first
 as a rejection filter, then matching KERNELS as positive guidance. Use the
 universal stage `refs=` and the loaded language-family `## STAGE-REFS` to know
-which K ids belong to the current stage. Each `## LEAVES` record declares the
-`stages=` it carries; to cover the current stage, load every leaf whose
-`stages=` includes it. Stage-to-leaf resolution is a direct index lookup, never
-a filesystem search.
+which K ids belong to the current stage. Each K id has a mirrored X id with
+the same numeric suffix in the same leaf, so the same refs also locate the
+EXCLUDES to consult first. Each `## LEAVES` record declares the `stages=` it
+carries; to cover the current stage, load every leaf whose `stages=` includes
+it. Stage-to-leaf resolution is a direct index lookup, never a filesystem
+search.
 
 - S00 scope: stay within requested scope and keep blast radius low
 - S01 invariants: prove exact invariants, preserve true special cases, obey contracts
@@ -82,24 +84,34 @@ When a task touches code:
    - Plain C: stay on universal only
    - Ambiguous `.h`: use the C++ family only when the file contains C++
      constructs
+   - Any other language: stay on the universal index only
 3. Treat each loaded `pack.urf.md` as a routing index, not as the dense
    guidance body.
 4. Human-oriented `packs/**/README.md` guides are not part of the runtime
    guidance surface. Load only pack indexes and the leaf files resolved from
    those indexes.
 5. From each loaded `## ROUTING`, match `signals=` against the active code
-   context to select your primary leaf per family.
-6. If your primary signal match is a late-stage refactoring leaf (S04-S06), you
-   MUST ALSO load at least one early-stage correctness leaf (S01-S03) to serve
-   as your rejection filter; pick it from `## LEAVES` by choosing a leaf whose
-   `stages=` includes the early stage your code's mechanics touch.
+   context to select your primary leaf per family. If several routes match,
+   pick the route matching the change's dominant mechanic and let the stage
+   walk pull in any remaining leaves; if no route matches, skip signal routing
+   and select leaves directly from `## LEAVES` `stages=` for the stages your
+   change touches.
+6. If your primary signal match is a late-stage refactoring leaf (one whose
+   `stages=` lie entirely in S04-S06), you MUST ALSO load at least one
+   early-stage correctness leaf (S01-S03) to serve as your rejection filter;
+   pick it from `## LEAVES` by choosing a leaf whose `stages=` includes the
+   early stage your code's mechanics touch.
 7. To cover a stage whose `refs=` ids are not in your loaded leaves, read
    `## LEAVES` and load every leaf whose `stages=` includes that stage; resolve
    coverage from the index, not by searching the `packs/` directory.
 8. Consult X entries first at the current stage, then K entries, before
    proceeding to later stages.
-9. Apply the guidance semantically. Never paste pack text verbatim into code or
-   comments.
+9. When delegating code work to a subagent, pass the pack index paths and this
+   contract, and require the subagent to run its own routing and stage walk
+   from those indexes. Do not pre-select leaves in the delegation prompt;
+   pre-selection bypasses routing and narrows the dose before the code is read.
+10. Apply the guidance semantically. Never paste pack text verbatim into code
+    or comments.
 
 ## Pre-Flight Review
 
@@ -138,16 +150,19 @@ Keep runtime reads focused:
 
 - default read set = `packs/universal/pack.urf.md` + one primary universal leaf
   + any additional universal leaves whose `stages=` are required by the stages
-  you actually walk + zero or one language-family index + zero or more language
-  leaves whose `stages=` are required by the same walked stages
+  your change's mechanics actually touch + zero or one language-family index +
+  zero or more language leaves whose `stages=` are required by the same touched
+  stages
+- walk every stage S00-S06, but load leaves only for the stages the change's
+  mechanics touch; clear an untouched stage on the universal index `focus=`
+  line instead of loading its leaves
 - for a focused coding change, the 3-5 entry budget is the dose you materially
   apply after walking every loaded stage; it is not a cap on the stage-walk
 - use `## LEAVES` `stages=` as the authoritative stage-to-leaf map; do not rely
   on filesystem search to discover which leaf covers a stage
 - for a pure review, audit, or compliance task with no single edit seam, widen
   the read surface to one leaf per stage-family the file's mechanics actually
-  touch across S01-S05
+  touch across S00-S06
 
 This file is the canonical portable instruction surface. Thin host adapters
 should mirror it without adding host-specific routing semantics.
-

@@ -9,6 +9,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKS_DIR = ROOT / "packs"
 ROUTING_RULE_PATH = ROOT / ".cursor" / "rules" / "parselfire-pack-routing.mdc"
+AGENTS_CONTRACT_PATH = ROOT / "AGENTS.md"
+STAGE_SUMMARY_PATHS = (ROUTING_RULE_PATH, AGENTS_CONTRACT_PATH)
+MAX_SCOPE_REPEATS = 5
 HEADING_RE = re.compile(r"^##\s+(?P<name>[A-Z-]+)\s*$")
 PAIR_ID_RE = re.compile(r"^(?P<prefix>[A-Z]+)-(?P<kind>[KX])(?P<number>\d+)$")
 ROUTING_ID_RE = re.compile(r"^[RL]\d+$")
@@ -576,21 +579,22 @@ def validate_stage_refs_coverage(
 
 
 def warn_stage_pipeline_summary_drift(stage_records: list[Record], state: LintState) -> None:
-    if not ROUTING_RULE_PATH.exists():
-        state.warning(ROUTING_RULE_PATH, 1, "missing .cursor stage pipeline summary surface")
-        return
-    summary_stage_ids: list[str] = []
-    for line in ROUTING_RULE_PATH.read_text(encoding="utf-8").splitlines():
-        match = RULE_STAGE_SUMMARY_RE.match(line.strip())
-        if match is not None:
-            summary_stage_ids.append(match.group(1))
     pack_stage_ids = [record.record_id for record in stage_records]
-    if summary_stage_ids != pack_stage_ids:
-        state.warning(
-            ROUTING_RULE_PATH,
-            1,
-            "stage summary bullets drifted from the canonical universal stage ids",
-        )
+    for summary_path in STAGE_SUMMARY_PATHS:
+        if not summary_path.exists():
+            state.warning(summary_path, 1, "missing stage pipeline summary surface")
+            continue
+        summary_stage_ids: list[str] = []
+        for line in summary_path.read_text(encoding="utf-8").splitlines():
+            match = RULE_STAGE_SUMMARY_RE.match(line.strip())
+            if match is not None:
+                summary_stage_ids.append(match.group(1))
+        if summary_stage_ids != pack_stage_ids:
+            state.warning(
+                summary_path,
+                1,
+                "stage summary bullets drifted from the canonical universal stage ids",
+            )
 
 
 def _finish_lint(state: LintState, *, family_count: int, leaf_count: int) -> int:
@@ -698,6 +702,43 @@ def lint_repo() -> int:
             for number in sorted(set(family_numbers[kind]) - set(family_numbers[other_kind])):
                 record = family_numbers[kind][number]
                 state.error_at(record, f"{kind} suffix {number} has no mirrored {other_kind} entry in family {family_dir.name!r}")
+
+        for number in sorted(set(family_numbers["K"]) & set(family_numbers["X"])):
+            k_record = family_numbers["K"][number]
+            x_record = family_numbers["X"][number]
+            if k_record.fields.get("stage") != x_record.fields.get("stage"):
+                state.error_at(
+                    x_record,
+                    f"mirror pair suffix {number} has stage {x_record.fields.get('stage')!r} "
+                    f"but {k_record.record_id} has stage {k_record.fields.get('stage')!r}; "
+                    "K/X mirrors must share one stage",
+                )
+            if k_record.file_path != x_record.file_path:
+                state.error_at(
+                    x_record,
+                    f"mirror pair suffix {number} is split across "
+                    f"{k_record.file_path.name!r} and {x_record.file_path.name!r}; "
+                    "K/X mirrors must live in the same leaf",
+                )
+
+        scope_records: dict[str, list[Record]] = {}
+        for record in family_ids.values():
+            scope = record.fields.get("scope")
+            if scope:
+                scope_records.setdefault(scope, []).append(record)
+        for scope, records_with_scope in sorted(scope_records.items()):
+            if len(records_with_scope) > MAX_SCOPE_REPEATS:
+                state.error_at(
+                    records_with_scope[-1],
+                    f"scope {scope!r} appears on {len(records_with_scope)} entries in "
+                    f"family {family_dir.name!r}; the limit is {MAX_SCOPE_REPEATS}",
+                )
+            elif len(records_with_scope) > 1:
+                state.warning_at(
+                    records_with_scope[-1],
+                    f"scope {scope!r} appears on {len(records_with_scope)} entries in "
+                    f"family {family_dir.name!r}; scopes should normally be unique",
+                )
 
         if family_dir.name == "universal":
             warn_stage_pipeline_summary_drift(index_validation.stage_records, state)

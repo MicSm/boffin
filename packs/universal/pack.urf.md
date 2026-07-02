@@ -6,9 +6,9 @@ Language-agnostic runtime entry surface for ParselFire.
 
 ```text
 !PURPOSE|turn loaded kernels into a correctness-first decision pipeline that favors consistent code over flat checklist application
-!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
+!APPLY|for coding and review|walk stages from S00 upward; at each stage gather the K entries named by this stage's refs plus any loaded family STAGE-REFS for the same stage; each K id has a mirrored X id with the same numeric suffix in the same leaf, so the same refs locate the stage's EXCLUDES; consult matching EXCLUDES first as a rejection filter, then KERNELS as positive guidance; earlier stages override later ones on conflict; never weaken an earlier-stage invariant to satisfy a later-stage cleanup or convergence goal
 !ANTI|consult EXCLUDES at the current stage before reaching for later-stage refactors
-!SHOW|on user request|render the active stages selected K/X entries and blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
+!SHOW|on user request|render the active stages, the selected K/X entries, and the blocking earlier-stage invariants as concise ordered plain-language bullets in the user's language
 S00|name=scope-and-need|focus=stay within requested scope and keep blast radius low without compromising semantic preservation|refs=UNI-K01;UNI-K02;UNI-K03;UNI-K04
 S01|name=contracts-and-invariants|focus=prove exact invariants preserve true special cases and obey safety-critical contracts|refs=UNI-K05;UNI-K06;UNI-K07;UNI-K08;UNI-K09;UNI-K10;UNI-K11;UNI-K12;UNI-K13;UNI-K14;UNI-K15;UNI-K38
 S02|name=state-and-outcome-modeling|focus=make meaningful states explicit and keep distinct outcomes distinct instead of collapsing them|refs=UNI-K16;UNI-K17;UNI-K18;UNI-K19;UNI-K33;UNI-K34;UNI-K46;UNI-K47;UNI-K48;UNI-K51

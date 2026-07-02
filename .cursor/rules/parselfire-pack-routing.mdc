@@ -62,10 +62,12 @@ Walk stages from S00 upward when reasoning about code changes. Earlier stages
 override later ones on conflict. At each stage, inspect matching EXCLUDES first
 as a rejection filter, then matching KERNELS as positive guidance. Use the
 universal stage `refs=` and the loaded language-family `## STAGE-REFS` to know
-which K ids belong to the current stage. Each `## LEAVES` record declares the
-`stages=` it carries; to cover the current stage, load every leaf whose
-`stages=` includes it. Stage-to-leaf resolution is a direct index lookup, never
-a filesystem search.
+which K ids belong to the current stage. Each K id has a mirrored X id with
+the same numeric suffix in the same leaf, so the same refs also locate the
+EXCLUDES to consult first. Each `## LEAVES` record declares the `stages=` it
+carries; to cover the current stage, load every leaf whose `stages=` includes
+it. Stage-to-leaf resolution is a direct index lookup, never a filesystem
+search.
 
 - S00 scope: stay within requested scope and keep blast radius low
 - S01 invariants: prove exact invariants, preserve true special cases, obey contracts
@@ -88,10 +90,11 @@ Before reading, editing, reviewing, or refactoring code:
 - Otherwise stay on the universal index only.
 - Use loaded pack indexes as the routing surface for leaf selection.
 - Human-oriented `packs/**/README.md` guides are not part of the runtime guidance surface. Load only pack indexes and the leaf files resolved from those indexes.
-- From `## ROUTING`, match `signals` against the active code context to select your primary leaf per family.
-- STAGE-WALK REQUIREMENT: You cannot safely perform late-stage refactoring (S04-S06) without an early-stage rejection filter. If your primary signal match is a late-stage leaf (for example, `shared-abstractions.urf.md`), you MUST ALSO load at least one early-stage correctness leaf (S01-S03); pick it from `## LEAVES` by choosing a leaf whose `stages=` includes the early stage your code's mechanics touch.
+- From `## ROUTING`, match `signals` against the active code context to select your primary leaf per family. If several routes match, pick the route matching the change's dominant mechanic and let the stage walk pull in any remaining leaves; if no route matches, skip signal routing and select leaves directly from `## LEAVES` `stages=` for the stages your change touches.
+- STAGE-WALK REQUIREMENT: You cannot safely perform late-stage refactoring (S04-S06) without an early-stage rejection filter. If your primary signal match is a late-stage leaf (one whose `stages=` lie entirely in S04-S06, for example `shared-abstractions.urf.md`), you MUST ALSO load at least one early-stage correctness leaf (S01-S03); pick it from `## LEAVES` by choosing a leaf whose `stages=` includes the early stage your code's mechanics touch.
 - To cover a stage whose `refs=` ids are not in your loaded leaves, read `## LEAVES` and load every leaf whose `stages=` includes that stage; resolve coverage from the index, not by searching the `packs/` directory.
-- Coding vs review dose: for a focused coding change, load the primary seam leaf, the mandatory early-stage filter, and any additional leaves whose `stages=` are needed to complete the stages you actually walk. For a pure review, audit, or compliance task with no single edit seam, load one leaf per stage-family the file's mechanics actually touch across S01-S05 because review needs width across stages, not a single dose.
+- When delegating code work to a subagent, pass the pack index paths and this contract, and require the subagent to run its own routing and stage walk from those indexes. Do not pre-select leaves in the delegation prompt; pre-selection bypasses routing and narrows the dose before the code is read.
+- Coding vs review dose: for a focused coding change, load the primary seam leaf, the mandatory early-stage filter, and any additional leaves whose `stages=` are needed to complete the stages the change's mechanics actually touch; clear an untouched stage on the universal index `focus=` line instead of loading its leaves. For a pure review, audit, or compliance task with no single edit seam, load one leaf per stage-family the file's mechanics actually touch across S00-S06 because review needs width across stages, not a single dose.
 
 After loading leaves:
 
