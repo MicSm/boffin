@@ -1,0 +1,36 @@
+{
+  "name": "boffin",
+  "version": "0.2.0",
+  "description": "Strict, routed architectural guardrails for AI coding agents, powered by ParselFire Core.",
+  "author": {
+    "name": "MicSm",
+    "url": "https://github.com/MicSm"
+  },
+  "homepage": "https://github.com/MicSm/boffin",
+  "repository": "https://github.com/MicSm/boffin",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "code-review",
+    "guardrails",
+    "productivity"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/claude-codex-hooks.json",
+  "interface": {
+    "displayName": "Boffin",
+    "shortDescription": "Routed architectural guardrails",
+    "longDescription": "Apply focused architectural constraints, staged reviews, and post-change verification to coding work.",
+    "developerName": "MicSm",
+    "category": "Productivity",
+    "capabilities": [
+      "Instructions",
+      "Lifecycle hooks"
+    ],
+    "websiteURL": "https://github.com/MicSm/boffin",
+    "defaultPrompt": [
+      "Use Boffin for this coding task.",
+      "Review these changes with Boffin."
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "boffin",
+  "displayName": "Boffin",
+  "version": "0.2.0",
+  "description": "Strict, routed architectural guardrails for AI coding agents, powered by ParselFire Core.",
+  "author": {
+    "name": "MicSm",
+    "url": "https://github.com/MicSm"
+  },
+  "homepage": "https://github.com/MicSm/boffin",
+  "repository": "https://github.com/MicSm/boffin",
+  "license": "MIT",
+  "keywords": [
+    "architecture",
+    "code-review",
+    "guardrails",
+    "productivity"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/claude-codex-hooks.json"
+}

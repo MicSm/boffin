@@ -1,0 +1,25 @@
+{
+  "name": "boffin",
+  "owner": {
+    "name": "MicSm"
+  },
+  "description": "Boffin plugins for routed architectural guardrails.",
+  "plugins": [
+    {
+      "name": "boffin",
+      "displayName": "Boffin",
+      "source": "./",
+      "description": "Strict, routed architectural guardrails for AI coding agents, powered by ParselFire Core.",
+      "version": "0.2.0",
+      "author": {
+        "name": "MicSm"
+      },
+      "category": "productivity",
+      "tags": [
+        "architecture",
+        "code-review",
+        "guardrails"
+      ]
+    }
+  ]
+}

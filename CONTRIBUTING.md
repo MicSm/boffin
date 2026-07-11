@@ -4,7 +4,7 @@ Boffin accepts improvements to the public pack surface, format docs, and
 release tooling. The repository is intentionally small, so contribution quality
 matters more than contribution volume.
 
-Public product naming: **Boffin** is the wedge developers see; **ParselFire Core**
+Public product naming: **Boffin** is the product developers see; **ParselFire Core**
 is the routing engine and portable contract carried by `AGENTS.md`, `packs/`, and
 the thin host adapters.
 
@@ -88,7 +88,10 @@ files:
    host-specific routing or hook logic there.
 4. Keep semantic routing knowledge in `packs/` and the shared portable contract
    rather than diverging per host.
-5. Run `python scripts/check_adapter_copies.py` before opening a PR.
+5. Keep shared plugin surfaces (`skills/`, `hooks/`, `.claude-plugin/`,
+   `.codex-plugin/`) pointed at the canonical `AGENTS.md` contract rather than
+   introducing a second hand-authored instruction copy.
+6. Run `python scripts/check_adapter_copies.py` before opening a PR.
 
 ## Adding Or Changing Families
 
@@ -118,22 +121,32 @@ Run:
 ```text
 python scripts/pack_lint.py
 python scripts/check_adapter_copies.py
+node scripts/check-versions.js
+npm test
 ```
 
 The current validator checks the core `packs/` tree, including stage refs and
-universal directives. If your contribution also touches documentation, make
-sure README links, file-layout references, and format examples still match the
-tracked repository.
+universal directives. The adapter check keeps static adapters and shared plugin
+surfaces aligned with the canonical `AGENTS.md` contract. The version check
+pins release manifests to the root `VERSION`. `npm test` exercises the shared
+installer, plugin, and hook runtime. If your contribution also touches
+documentation, make sure README links, file-layout references, and format
+examples still match the tracked repository.
 
 ## Versioning For Now
 
 - the root `VERSION` file is the canonical release number for this repository
 - bump `VERSION` manually when cutting a release or release candidate
+- `package.json`, `gemini-extension.json`, `.claude-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json`, and `.codex-plugin/plugin.json` must match
+  `VERSION`
 - CI automation is intentionally deferred until after the initial OSS release
 - until CI exists, run `python scripts/pack_lint.py` locally for pack-surface or
   validator changes
 - run `python scripts/check_adapter_copies.py` locally for `AGENTS.md`,
-  host-adapter, or manifest changes
+  host-adapter, shared-plugin, or manifest changes
+- run `node scripts/check-versions.js` locally for release-surface changes
+- run `npm test` locally for installer, hook, or plugin changes
 
 ## External Packs
 
@@ -158,7 +171,10 @@ Before submitting a PR, make sure:
 - the change matches the live routed-pack architecture
 - `python scripts/pack_lint.py` passes if you touched `packs/` or validator code
 - `python scripts/check_adapter_copies.py` passes if you touched `AGENTS.md`,
-  host adapters, or manifest surfaces
+  host adapters, shared plugin surfaces, or manifest surfaces
+- `node scripts/check-versions.js` passes if you touched `VERSION`, package
+  metadata, or plugin manifests
+- `npm test` passes if you touched installer, plugin, hook, or skill surfaces
 - new routing signals stay unique inside the edited family
 - new K/X records are mirrored and stage-sorted
 - any changed stage placement also updates the matching `refs=` or `SR` line

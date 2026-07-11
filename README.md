@@ -1,285 +1,134 @@
 <p align="center">
-  <img src="logo.png" alt="Boffin logo" width="200">
+  <img src="assets/boffin-hero.png" alt="Boffin reviewing an AI-generated diff before a load-bearing wall is removed" width="800">
 </p>
 
 <h1 align="center">Boffin</h1>
 
-<p align="center">Strict staff-engineer guardrails for AI coding agents.<br>
-Powered by the <strong>ParselFire Core</strong> routing engine.</p>
+<p align="center"><strong>You asked for a small fix. Your AI agent came back with a renovation.</strong></p>
 
-<p align="center">
-  <a href="#evidence">Evidence</a> •
-  <a href="#quick-start">Quick Start</a> •
-  <a href="#make-the-effect-visible">Make The Effect Visible</a> •
-  <a href="#how-it-works-under-the-hood">How It Works</a>
-</p>
+<p align="center">Boffin is the brilliant, fussy technical expert who reads the diff and refuses to let your coding agent knock out a load-bearing wall.</p>
 
-> **This is not just another `AGENTS.md` with a "daily routine" for your LLM.**
->
-> We use text rules to force the LLM's attention to stop on the exact code details that must not be broken (or must be applied) right at the moment of the edit. 
->
-> These are our invariants, stored in pack files, so ANY LLM can use them to improve your code without destroying your architecture.
+Boffin gives coding agents the relevant architectural constraints before they
+edit, then makes them verify the result. It is powered by **ParselFire Core**.
 
-AI agents write code fast but forget your architecture between sessions. They
-duplicate logic you deliberately extracted, flatten special cases you preserved
-on purpose, and drift away from boundaries that took months to establish.
-Larger context windows do not fix this — they give the agent more text, not
-more understanding.
+## Proof, not promises
 
-Boffin ships a small set of focused guidance files (ParselFire Core) that
-activate only when relevant. Instead of one giant rules dump the agent ignores,
-it loads a small routed read set, walks architectural stages from S00 through
-S06, and checks earlier-stage correctness before later-stage cleanup or DRY
-work — then audits the result against those same constraints after the edit.
+The public case studies record these guided refactors on real open-source code:
 
-> Early public discussion of this failure mode resonated not only with software
-> engineers, but also with AI-tooling and IP-oriented practitioners. That is a
-> useful signal that architectural drift is a real cross-discipline pain, not a
-> niche prompt-engineering complaint.
+- **[DuckDB](examples/before-after-cpp.md):** `+17 / -17`; 2,104 assertions
+  across 8 test files passed; distinct continuation and recovery paths were
+  preserved.
+- **[FastAPI](examples/before-after-python.md):** `+16 / -33`; 49 tests passed;
+  no public API change.
+- **[LangChain](examples/before-after-python.md):** the sync/async boundary was
+  preserved; 4 tests passed.
 
-## Evidence
+These are reproducible case studies, not a controlled A/B benchmark.
 
-Tested on real open-source repositories, not toy examples:
+## Install
 
-| repo | change | result |
-|------|--------|--------|
-| **FastAPI** (75k stars) | collapsed duplicated auth parsing in `fastapi/security/http.py` | `+16 / -33`, 49 tests pass, no API change |
-| **LangChain** (100k stars) | extracted shared retry bookkeeping in `runnables/retry.py` | `+97 / -67`, 4 tests pass, sync/async boundary preserved |
-| **DuckDB** (39k stars) | safe cleanup of `parallel/pipeline_executor.cpp` | `+17 / -17`, parallel tests pass, interrupt-recovery paths preserved |
+Boffin requires Node.js 18 or newer.
 
-Across these cases, the agent avoided the mistakes it would normally make:
-no speculative abstractions, no flattened special cases, no merged sync/async
-paths, no collapsed interrupt-recovery paths.
+### Cursor
 
-Full write-ups with diffs, test output, and constraint traceability:
+Run from your project:
 
-- [before/after evidence (Python)](examples/before-after-python.md)
-- [before/after evidence (C++)](examples/before-after-cpp.md)
-
-## How It Differs From `AGENTS.md`
-
-`AGENTS.md` tells an agent how to work in your repository — build commands,
-test commands, code style, workflow conventions.
-
-Boffin teaches an agent what not to break — architectural boundaries,
-lifecycle invariants, domain-specific constraints that outlive any single task.
-
-| | `AGENTS.md` | Boffin |
-|--|-------------|--------|
-| scope | workflow and style | architectural boundaries |
-| loaded | everything, always | small routed read set, widened by stage when review needs it |
-| portable | yes | yes — same packs work across 10+ agent hosts |
-| auditable | no | yes — explicit stage walk, external checks, and post-edit review |
-
-## Works With Your Agent
-
-Pick whichever surface your host already reads:
-
-| host | file |
-|------|------|
-| Cursor | `.cursor/rules/` (routed, automatic) |
-| Claude Code | `CLAUDE.md` |
-| Codex, Aider, Zed, CodeWhale | `AGENTS.md` |
-| GitHub Copilot | `.github/copilot-instructions.md` |
-| Windsurf | `.windsurf/rules/boffin.md` |
-| Cline | `.clinerules/boffin.md` |
-| Kiro | `.kiro/steering/boffin.md` |
-| Workspace rules hosts | `.agents/rules/boffin.md` |
-| Gemini CLI / Antigravity | `gemini-extension.json` |
-
-All adapters point at the same underlying guidance. The architectural
-knowledge lives in `packs/`; the per-host files are thin delivery surfaces.
-
-## Browse The Packs
-
-If you are inspecting ParselFire Core as a human, start with the guide surfaces:
-
-- [`packs/README.md`](packs/README.md)
-- [`packs/universal/README.md`](packs/universal/README.md)
-- [`packs/python-architecture/README.md`](packs/python-architecture/README.md)
-- [`packs/cpp-architecture/README.md`](packs/cpp-architecture/README.md)
-
-These guide files are for humans only. The runtime contract still loads only
-`pack.urf.md` indexes and the `*.urf.md` leaf files resolved from those
-indexes.
-
-## Quick Start
-
-```text
-git clone <boffin-repo-url>
-cd boffin
-git clone <your-project-url> .repos/target
+```sh
+npx boffinit cursor
 ```
 
-**Cursor** (automatic routing):
+### Claude Code
 
-1. Open `boffin/` as the workspace root.
-2. Ask the agent to work inside `.repos/target/`.
-3. Rules load the relevant guidance automatically, keep focused changes in
-   scope, and widen into a two-pass audit for open-ended refactors or reviews.
-
-**Other hosts**:
-
-1. Copy the matching file from the table above into your project.
-2. Put (or symlink) the `packs/` folder where the agent can read it.
-3. The instruction file tells the agent to load relevant packs before writing
-   code and re-audit the touched result afterward.
-
-### Test Drive Prompt
-
-Use this on a real module that has duplication plus at least one preserved
-special case. It is intentionally shaped like the kind of DRY request that
-often damages architecture:
+Run these inside Claude Code:
 
 ```text
-Refactor this module to be more DRY and remove redundant checks.
-
-Before editing, walk ParselFire Core stages S00-S06 in order.
-If this is an open-ended refactor, do a read-only Pass 1 audit first and build a findings ledger for each in-scope stage.
-Call out which invariants, lifecycle rules, boundary rules, or sync/async separations would be weakened by the refactor.
-Then apply only the safe rows one at a time, running the narrowest external check after each row.
+/plugin marketplace add MicSm/boffin
+/plugin install boffin@boffin
 ```
 
-## Make The Effect Visible
+### Codex
 
-It is not always obvious whether a good architectural catch came from the agent's
-base model or from ParselFire Core's loaded constraints.
+Run these from a terminal:
 
-To make ParselFire Core's contribution visible, ask the agent not only to review or
-refactor your code, but also to explicitly report which stages and constraints
-it applied during the work.
-
-Example prompt:
-
-```text
-Work in this repository and analyze modules A, B, and C for compliance with their architectural invariants.
-Walk ParselFire Core stages S00-S06 in order and give me a compact list of which stages and kernels you applied during the analysis and why each one was relevant.
+```sh
+codex plugin marketplace add MicSm/boffin
+codex plugin add boffin@boffin
 ```
 
-That makes the result auditable: you see not just the issues the agent found,
-but which architectural kernels were active and why they helped surface those
-issues.
+Codex does not trust plugin hooks automatically. Run `/hooks` once inside Codex
+to review and trust Boffin's hooks; until then the plugin's skills work but the
+automatic per-session activation stays off.
 
-## What Ships In v0
+Want the machinery? Read **[how ParselFire Core works](docs/engine.md)**.
 
-- **3 guidance families**: universal, Python, and C++ — covering lifecycle,
-  concurrency, shared abstractions, async boundaries, ownership, and more
-- **10+ host adapters**: thin instruction files for every major agent runtime
-- **Format specification**: [spec/kernel-schema.md](spec/kernel-schema.md) and
-  [spec/urf-profile-kernels.md](spec/urf-profile-kernels.md)
-- **Zero-dependency validator**: [scripts/pack_lint.py](scripts/pack_lint.py)
-  plus [scripts/check_adapter_copies.py](scripts/check_adapter_copies.py)
-  for adapter-drift detection
-- **Real evidence**: [examples/before-after-python.md](examples/before-after-python.md)
-- **Signature scaffolding**: [signatures/README.md](signatures/README.md)
+## What Boffin is fussy about
 
-v0 is deliberately small: focused guidance packs, local validation, and
-reproducible evidence. No dependencies, no hosted services, no API keys.
+Similar code is not always the same code. Boffin gives the agent a reason to
+stop before it merges a real special case, blurs a sync/async boundary, moves
+state away from its owner, or turns a focused task into a tour of the codebase.
 
-## How It Works Under The Hood
+- For a focused change, it keeps the requested scope small and asks for the
+  narrowest check that proves the edit.
+- For an open-ended refactor or review, it requires a read-only audit first,
+  followed by one verified finding at a time.
+- When cleanup conflicts with an earlier correctness rule, correctness wins.
 
-Each guidance family has a thin index and several leaf files. The agent
-selects a primary leaf per family from the active code context — file type,
-directory, and domain hints — then uses the universal stage pipeline to decide
-what to check first. Each `## LEAVES` entry also declares `stages=`, so once
-the agent knows which stage it is walking it can load the exact leaf set for
-that stage directly from the index instead of searching the repository for a
-matching K id.
+The point is not to make the agent timid. It is to make the expensive details
+explicit before they become an interesting afternoon.
 
-For a focused coding task, the agent usually reads:
+## Other hosts
 
-- one universal index
-- one primary universal leaf for the seam it is working on
-- any additional universal leaves whose `stages=` are required by the stages
-  the change's mechanics actually touch (untouched stages are cleared on the
-  index `focus=` lines alone)
-- when the seam is a late-stage refactor (S04-S06), at least one early-stage
-  correctness leaf (S01-S03), plus any other leaves required to complete that
-  early stage, as a rejection filter
-- zero or one language-family index + zero or more language leaves required by
-  the same touched stages
-- total: still a small routed read set, not the entire repository
+Portable adapters cover hosts that read `AGENTS.md`, `CLAUDE.md`, workspace
+rules, or repository instructions. See
+**[host delivery and adapters](docs/engine.md#host-delivery-and-adapters)** for
+the technical map.
 
-For an open-ended refactor, review, or compliance pass, the agent widens the
-read surface to one leaf per stage-family the file's mechanics actually touch
-across S00-S06, because review needs width rather than a single seam.
+## FAQ
 
-While reasoning, the agent walks stages S00-S06 in order. At each stage it
-checks matching `X` entries first as rejection filters and matching `K` entries
-second as positive guidance. Earlier stages override later ones on conflict.
-For focused coding, the 3-5 entry budget applies only to the entries the agent
-materially acts on after the stage walk; it is not a cap on the walk itself.
-For refactor or review work, the agent should first build stage-scoped
-findings, then apply and verify them one by one.
+### What do `lite`, `full`, and `max` change?
 
-After making an edit, the agent re-reads the loaded constraints, runs the
-narrowest external check that proves the change, and reviews the final touched
-region against those constraints. Mismatches are flagged immediately,
-including cases where a later-stage cleanup would weaken an earlier-stage
-invariant.
+They tune cleanup ambition, not correctness:
 
-This keeps the attention cost low while making the guidance falsifiable —
-every claimed constraint must be grounded in the actual change and its
-verification, not just cited aspirationally.
+- `lite` keeps cleanup pressure low and favors the smallest useful change.
+- `full` is the balanced default.
+- `max` applies the strongest cleanup pressure when the task justifies it.
 
-## The "Let Them Copy" Doctrine
+On plugin hosts, select a profile with `/boffin lite`, `/boffin full`, or
+`/boffin max`. There is no `off` profile.
 
-If you are building an AI agent platform, an IDE, or an enterprise coding tool: **you should copy this approach.**
+### Do profiles change the safety floor?
 
-The industry cannot solve architectural drift by throwing larger context windows at the problem. Agents need focused invariants, loaded exactly when a design decision is being made, and verified against the resulting change with real checks.
+No. Every profile keeps the same early correctness stages and rejection rules,
+including trust-boundary validation, data-loss prevention, security, and
+accessibility requirements.
 
-Boffin, powered by ParselFire Core, is the open runtime for this paradigm. Whether you use it directly or build your own version of routed guardrails, the architecture of AI coding tools must move in this direction. Copying is encouraged.
+### Is Boffin a command sandbox or security tool?
 
-## Repository Layout
+No. Boffin does not isolate processes, filter shell commands, or restrict
+filesystem or network access. It guides architectural decisions in generated
+code. Use command sandboxes and security controls for their own job; Boffin has
+a different job.
 
-```text
-packs/                Architectural guidance — family indexes, leaf files, guides
-  universal/          Language-agnostic constraints (lifecycle, abstractions, ...)
-  python-architecture/  Python-specific (async boundaries, import structure, ...)
-  cpp-architecture/   C++ (ownership, concurrency, RAII patterns, ...)
-examples/             Before/after evidence from real refactors
-spec/                 Public format specification
-scripts/              Zero-dependency validators
-signatures/           Signing scaffolding, public keys, mirrored pack signatures
-external/             Third-party / community packs (contribution area)
-.cursor/rules/        Cursor-specific activation rules (`boffin-*.mdc`)
-AGENTS.md             Portable instruction contract (canonical)
-CLAUDE.md             Claude Code adapter
-.github/              GitHub Copilot adapter
-.windsurf/            Windsurf adapter
-.clinerules/          Cline adapter
-.kiro/                Kiro adapter
-.agents/              Generic workspace-rule adapter
-gemini-extension.json Gemini / Antigravity manifest
-VERSION               Release marker
+### How do I uninstall the Cursor integration?
+
+```sh
+npx boffinit cursor uninstall
 ```
 
-## Validation
+The uninstaller removes Boffin-managed files only and leaves unrelated Cursor
+rules and unknown project files alone.
 
-Run before committing changes to guidance or adapter files:
+### Does Boffin replace tests or code review?
 
-```text
-python scripts/pack_lint.py
-python scripts/check_adapter_copies.py
-```
+No. It tells the agent which contracts deserve attention and requires external
+checks, but your repository's tests and review process remain authoritative.
 
-The first script validates guidance structure (numbering, ordering, cross-
-references). The second ensures all host adapters stay in sync with the
-canonical `AGENTS.md` contract.
+## Project
 
-If you changed shipped `packs/*.urf.md` surfaces, also run:
+- Repository: <https://github.com/MicSm/boffin>
+- Engine documentation: [ParselFire Core](docs/engine.md)
+- Evidence: [Python](examples/before-after-python.md) and
+  [C++](examples/before-after-cpp.md)
+- Contributions: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-```text
-python scripts/pack_signatures.py verify --target-dir packs --quiet-success
-```
-
-## Contributing
-
-- Format rules: [spec/kernel-schema.md](spec/kernel-schema.md)
-- Contribution workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
-- External pack expectations: [external/README.md](external/README.md)
-- Signing and verification: [signatures/README.md](signatures/README.md)
-
-## License
-
-MIT
+Boffin is available under the [MIT License](LICENSE). See [credits](CREDITS).
