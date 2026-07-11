@@ -1,8 +1,12 @@
-# Contributing to ParselFire
+# Contributing to Boffin
 
-ParselFire accepts improvements to the public pack surface, format docs, and
+Boffin accepts improvements to the public pack surface, format docs, and
 release tooling. The repository is intentionally small, so contribution quality
 matters more than contribution volume.
+
+Public product naming: **Boffin** is the wedge developers see; **ParselFire Core**
+is the routing engine and portable contract carried by `AGENTS.md`, `packs/`, and
+the thin host adapters.
 
 ## What Belongs Here
 

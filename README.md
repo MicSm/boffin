@@ -1,10 +1,11 @@
 <p align="center">
-  <img src="logo.png" alt="ParselFire logo" width="200">
+  <img src="logo.png" alt="Boffin logo" width="200">
 </p>
 
-<h1 align="center">ParselFire Project</h1>
+<h1 align="center">Boffin</h1>
 
-<p align="center">Portable architectural guardrails for AI coding agents</p>
+<p align="center">Strict staff-engineer guardrails for AI coding agents.<br>
+Powered by the <strong>ParselFire Core</strong> routing engine.</p>
 
 <p align="center">
   <a href="#evidence">Evidence</a> •
@@ -25,11 +26,11 @@ on purpose, and drift away from boundaries that took months to establish.
 Larger context windows do not fix this — they give the agent more text, not
 more understanding.
 
-ParselFire is a small set of focused guidance files that activate only when
-relevant. Instead of one giant rules dump the agent ignores, it loads a small
-routed read set, walks architectural stages from S00 through S06, and checks
-earlier-stage correctness before later-stage cleanup or DRY work — then audits
-the result against those same constraints after the edit.
+Boffin ships a small set of focused guidance files (ParselFire Core) that
+activate only when relevant. Instead of one giant rules dump the agent ignores,
+it loads a small routed read set, walks architectural stages from S00 through
+S06, and checks earlier-stage correctness before later-stage cleanup or DRY
+work — then audits the result against those same constraints after the edit.
 
 > Early public discussion of this failure mode resonated not only with software
 > engineers, but also with AI-tooling and IP-oriented practitioners. That is a
@@ -60,11 +61,11 @@ Full write-ups with diffs, test output, and constraint traceability:
 `AGENTS.md` tells an agent how to work in your repository — build commands,
 test commands, code style, workflow conventions.
 
-ParselFire teaches an agent what not to break — architectural boundaries,
+Boffin teaches an agent what not to break — architectural boundaries,
 lifecycle invariants, domain-specific constraints that outlive any single task.
 
-| | `AGENTS.md` | ParselFire |
-|--|-------------|------------|
+| | `AGENTS.md` | Boffin |
+|--|-------------|--------|
 | scope | workflow and style | architectural boundaries |
 | loaded | everything, always | small routed read set, widened by stage when review needs it |
 | portable | yes | yes — same packs work across 10+ agent hosts |
@@ -80,9 +81,10 @@ Pick whichever surface your host already reads:
 | Claude Code | `CLAUDE.md` |
 | Codex, Aider, Zed, CodeWhale | `AGENTS.md` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
-| Windsurf | `.windsurf/rules/parselfire.md` |
-| Cline | `.clinerules/parselfire.md` |
-| Kiro | `.kiro/steering/parselfire.md` |
+| Windsurf | `.windsurf/rules/boffin.md` |
+| Cline | `.clinerules/boffin.md` |
+| Kiro | `.kiro/steering/boffin.md` |
+| Workspace rules hosts | `.agents/rules/boffin.md` |
 | Gemini CLI / Antigravity | `gemini-extension.json` |
 
 All adapters point at the same underlying guidance. The architectural
@@ -90,7 +92,7 @@ knowledge lives in `packs/`; the per-host files are thin delivery surfaces.
 
 ## Browse The Packs
 
-If you are inspecting ParselFire as a human, start with the guide surfaces:
+If you are inspecting ParselFire Core as a human, start with the guide surfaces:
 
 - [`packs/README.md`](packs/README.md)
 - [`packs/universal/README.md`](packs/universal/README.md)
@@ -104,14 +106,14 @@ indexes.
 ## Quick Start
 
 ```text
-git clone <parselfire-repo-url>
-cd parselfire
+git clone <boffin-repo-url>
+cd boffin
 git clone <your-project-url> .repos/target
 ```
 
 **Cursor** (automatic routing):
 
-1. Open `parselfire/` as the workspace root.
+1. Open `boffin/` as the workspace root.
 2. Ask the agent to work inside `.repos/target/`.
 3. Rules load the relevant guidance automatically, keep focused changes in
    scope, and widen into a two-pass audit for open-ended refactors or reviews.
@@ -132,7 +134,7 @@ often damages architecture:
 ```text
 Refactor this module to be more DRY and remove redundant checks.
 
-Before editing, walk ParselFire stages S00-S06 in order.
+Before editing, walk ParselFire Core stages S00-S06 in order.
 If this is an open-ended refactor, do a read-only Pass 1 audit first and build a findings ledger for each in-scope stage.
 Call out which invariants, lifecycle rules, boundary rules, or sync/async separations would be weakened by the refactor.
 Then apply only the safe rows one at a time, running the narrowest external check after each row.
@@ -141,9 +143,9 @@ Then apply only the safe rows one at a time, running the narrowest external chec
 ## Make The Effect Visible
 
 It is not always obvious whether a good architectural catch came from the agent's
-base model or from ParselFire's loaded constraints.
+base model or from ParselFire Core's loaded constraints.
 
-To make ParselFire's contribution visible, ask the agent not only to review or
+To make ParselFire Core's contribution visible, ask the agent not only to review or
 refactor your code, but also to explicitly report which stages and constraints
 it applied during the work.
 
@@ -151,7 +153,7 @@ Example prompt:
 
 ```text
 Work in this repository and analyze modules A, B, and C for compliance with their architectural invariants.
-Walk ParselFire stages S00-S06 in order and give me a compact list of which stages and kernels you applied during the analysis and why each one was relevant.
+Walk ParselFire Core stages S00-S06 in order and give me a compact list of which stages and kernels you applied during the analysis and why each one was relevant.
 ```
 
 That makes the result auditable: you see not just the issues the agent found,
@@ -226,7 +228,7 @@ If you are building an AI agent platform, an IDE, or an enterprise coding tool: 
 
 The industry cannot solve architectural drift by throwing larger context windows at the problem. Agents need focused invariants, loaded exactly when a design decision is being made, and verified against the resulting change with real checks.
 
-ParselFire is the open runtime for this paradigm. Whether you use ParselFire directly or build your own version of routed guardrails, the architecture of AI coding tools must move in this direction. Copying is encouraged.
+Boffin, powered by ParselFire Core, is the open runtime for this paradigm. Whether you use it directly or build your own version of routed guardrails, the architecture of AI coding tools must move in this direction. Copying is encouraged.
 
 ## Repository Layout
 
@@ -240,7 +242,7 @@ spec/                 Public format specification
 scripts/              Zero-dependency validators
 signatures/           Signing scaffolding, public keys, mirrored pack signatures
 external/             Third-party / community packs (contribution area)
-.cursor/rules/        Cursor-specific activation rules
+.cursor/rules/        Cursor-specific activation rules (`boffin-*.mdc`)
 AGENTS.md             Portable instruction contract (canonical)
 CLAUDE.md             Claude Code adapter
 .github/              GitHub Copilot adapter

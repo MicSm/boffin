@@ -1,5 +1,5 @@
 ---
-description: Activate ParselFire C++ pack index
+description: Activate ParselFire Core C++ pack index
 globs: **/*.{cc,cpp,cxx,hh,hpp,hxx,ipp,tpp,inl}
 alwaysApply: false
 ---

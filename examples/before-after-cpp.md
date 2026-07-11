@@ -7,7 +7,7 @@ gathered in this session rather than historical notes.
 
 The point of this example is not the cleanup. **It is the catastrophe the agent refused to cause.** The target is DuckDB's parallel execution engine—a high-stakes concurrency surface. The request was a classic AI trap: *"Make it more DRY and remove redundant checks."*
 
-Without guardrails, AI tools "clean up" C++ by silently erasing the exact invariants that prevent deadlocks. Here is how ParselFire stopped it.
+Without guardrails, AI tools "clean up" C++ by silently erasing the exact invariants that prevent deadlocks. Here is how ParselFire Core stopped it.
 
 ## DuckDB: `src/parallel/pipeline_executor.cpp`
 
@@ -51,7 +51,7 @@ Instead of breaking the file, the agent used the stage-walk to find real bugs:
 
 This is what happens when you load architectural constraints *before* generating code. The agent refused to make the destructive edits:
 
-- **Refused to collapse thread-suspension states (`UNI-X08` / `UNI-K18`):** An unguided LLM merges the four `BLOCKED` / `INTERRUPTED` paths because they look the same. ParselFire stopped it, recognizing that returning `SinkNextBatchType::BLOCKED` versus `OperatorResultType::BLOCKED` persists completely different thread continuation flags (`next_batch_blocked` vs `remaining_sink_chunk`). Flattening them would cause silent pipeline hangs and deadlocks.
+- **Refused to collapse thread-suspension states (`UNI-X08` / `UNI-K18`):** An unguided LLM merges the four `BLOCKED` / `INTERRUPTED` paths because they look the same. ParselFire Core stopped it, recognizing that returning `SinkNextBatchType::BLOCKED` versus `OperatorResultType::BLOCKED` persists completely different thread continuation flags (`next_batch_blocked` vs `remaining_sink_chunk`). Flattening them would cause silent pipeline hangs and deadlocks.
 - **Refused to merge lifecycle overloads (`UNI-K08`):** The two `FinishSource` calls were left alone. The agent verified they encode different active-operator contracts depending on whether a `StartOperator` lock bracket is active.
 - **Preserved cross-thread visibility (`CPP-K02` / `CPP-K26`):** The agent explicitly refused to "simplify" synchronization, citing the rule that cross-thread global state must stay behind its `annotated_mutex`, while per-executor flags must remain instance-owned.
 - **Preserved explicit thread detaching (`CPP-X28`):** The debug-only `thread.detach()` blocks were flagged but deliberately kept because the agent identified them as isolated async test scaffolding (`#ifdef DUCKDB_DEBUG_ASYNC_SINK_SOURCE`).

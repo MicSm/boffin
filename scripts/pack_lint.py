@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKS_DIR = ROOT / "packs"
-ROUTING_RULE_PATH = ROOT / ".cursor" / "rules" / "parselfire-pack-routing.mdc"
+ROUTING_RULE_PATH = ROOT / ".cursor" / "rules" / "boffin-pack-routing.mdc"
 AGENTS_CONTRACT_PATH = ROOT / "AGENTS.md"
 STAGE_SUMMARY_PATHS = (ROUTING_RULE_PATH, AGENTS_CONTRACT_PATH)
 MAX_SCOPE_REPEATS = 5

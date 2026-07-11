@@ -1,7 +1,7 @@
 # External Packs
 
 This directory is reserved for third-party or community-maintained pack
-families that follow the ParselFire public format without becoming part of the
+families that follow the ParselFire Core public format without becoming part of the
 maintainer-shipped core surface in `packs/`.
 
 ## Expected Layout

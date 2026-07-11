@@ -1,6 +1,6 @@
 # Signatures
 
-ParselFire reserves a detached GPG signing surface for its public pack files.
+ParselFire Core reserves a detached GPG signing surface for its public pack files.
 For now, release numbering is tracked manually in the root `VERSION` file, and
 signatures are prepared manually during release packaging. CI-side signing is
 intentionally deferred until after the initial OSS release.

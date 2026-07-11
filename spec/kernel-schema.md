@@ -1,6 +1,6 @@
 # Kernel Schema
 
-ParselFire stores architectural guidance as a universal stage index plus thin family routers and leaf packs. `packs/universal/pack.urf.md` carries the shared S00-S06 stage model together with stage-walk directives and stage-local `refs=`. Language-family indexes carry compact routing records plus `## STAGE-REFS` that map family-specific K ids onto the shared stages. Leaf packs hold the actual K/X records that the agent selects from at runtime.
+ParselFire Core stores architectural guidance as a universal stage index plus thin family routers and leaf packs. `packs/universal/pack.urf.md` carries the shared S00-S06 stage model together with stage-walk directives and stage-local `refs=`. Language-family indexes carry compact routing records plus `## STAGE-REFS` that map family-specific K ids onto the shared stages. Leaf packs hold the actual K/X records that the agent selects from at runtime.
 
 ## Surface Types
 

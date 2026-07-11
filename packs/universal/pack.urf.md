@@ -1,6 +1,6 @@
 # Universal Pack Index
 
-Language-agnostic runtime entry surface for ParselFire.
+Language-agnostic runtime entry surface for ParselFire Core.
 
 ## STAGES
 

@@ -33,13 +33,13 @@ TEXT_ADAPTER_CHECKS: tuple[TextAdapterCheck, ...] = (
         for path in (
             Path("CLAUDE.md"),
             Path(".github/copilot-instructions.md"),
-            Path(".windsurf/rules/parselfire.md"),
-            Path(".clinerules/parselfire.md"),
-            Path(".agents/rules/parselfire.md"),
+            Path(".windsurf/rules/boffin.md"),
+            Path(".clinerules/boffin.md"),
+            Path(".agents/rules/boffin.md"),
         )
     ),
     TextAdapterCheck(
-        rel_path=Path(".kiro/steering/parselfire.md"),
+        rel_path=Path(".kiro/steering/boffin.md"),
         label="wrapped copy adapter",
         normalize=strip_frontmatter,
     ),

@@ -14,4 +14,4 @@ htmlcov/
 *.pyd
 *.tmp
 
-.parselfire/
+.boffin/
