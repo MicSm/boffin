@@ -70,9 +70,9 @@ When changing files under `packs/`:
    from the unique retrieval-key ideal, and more than 5 is an error.
 8. Keep public packs portable. If a pattern is too domain-specific or too
    sensitive for the shipped core families, move it out of the core surface.
-9. Treat pack index changes, matching public docs/spec updates, extractor
-   protocol updates, and mirrored detached signatures under
-   `signatures/packs/` as one maintenance transaction when stage refs change.
+9. Treat pack index changes, matching public docs/spec updates, and mirrored
+   detached signatures under `signatures/packs/` as one maintenance
+   transaction when stage refs change.
 10. `packs/**/README.md` files are human-readable guides only. Keep them concise
     and helpful, but do not turn them into an additional runtime guidance layer.
 
