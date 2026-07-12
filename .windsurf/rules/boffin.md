@@ -1,11 +1,6 @@
----
-title: ParselFire portable routing contract
-inclusion: always
----
+# ParselFire Core Portable Routing Contract
 
-# ParselFire Portable Routing Contract
-
-ParselFire gives AI coding agents a small routed set of architectural guardrails
+ParselFire Core gives AI coding agents a small routed set of architectural guardrails
 instead of one large always-on rules dump.
 
 ## Default Workflow

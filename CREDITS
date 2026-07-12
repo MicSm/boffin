@@ -1,4 +1,4 @@
-ParselFire is authored and maintained as a public open-source research project.
+Boffin and ParselFire Core are authored and maintained as a public open-source research project.
 
 Third-party credits
 ===================
@@ -8,8 +8,5 @@ ponytail
 Source: https://github.com/DietrichGebert/ponytail
 License: MIT - Copyright (c) 2026 DietrichGebert
 
-Ideas from the ponytail project's coding-philosophy rules were
-semantically integrated into ParselFire's architectural guidance
-and kernel packs.
-No verbatim copy; concepts were reworded and merged with
-existing project material.
+Ideas from the ponytail project's coding-philosophy rules were integrated into Boffin's ParselFire Core guidance packs.
+No verbatim copy; concepts were reworded and merged with existing project material.

@@ -1,9 +1,9 @@
 ---
-description: ParselFire pack activation and stage pipeline
+description: ParselFire Core pack activation and stage pipeline
 alwaysApply: true
 ---
 
-# ParselFire Pack Activation
+# ParselFire Core Pack Activation
 
 ## Default Workflow
 

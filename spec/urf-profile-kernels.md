@@ -1,6 +1,6 @@
 # URF Profile for Kernel Packs
 
-This document freezes the minimal URF-flavored profile used by ParselFire family indexes and leaf packs.
+This document freezes the minimal URF-flavored profile used by ParselFire Core family indexes and leaf packs.
 
 ## Goals
 
@@ -11,7 +11,7 @@ This document freezes the minimal URF-flavored profile used by ParselFire family
 
 ## File Shapes
 
-ParselFire uses three compatible file shapes.
+ParselFire Core uses three compatible file shapes.
 
 ### Universal index (`packs/universal/pack.urf.md`)
 

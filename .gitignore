@@ -4,6 +4,7 @@
 
 .venv/
 venv/
+node_modules/
 __pycache__/
 .pytest_cache/
 .coverage
@@ -14,4 +15,4 @@ htmlcov/
 *.pyd
 *.tmp
 
-.parselfire/
+.boffin/

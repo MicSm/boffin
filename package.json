@@ -1,0 +1,56 @@
+{
+  "name": "boffinit",
+  "version": "0.2.0",
+  "description": "Cursor installer and shared delivery assets for Boffin, routed architectural guardrails for AI coding agents",
+  "license": "MIT",
+  "author": {
+    "name": "MicSm",
+    "url": "https://github.com/MicSm"
+  },
+  "homepage": "https://github.com/MicSm/boffin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MicSm/boffin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MicSm/boffin/issues"
+  },
+  "keywords": [
+    "boffin",
+    "parselfire",
+    "cursor",
+    "claude-code",
+    "codex",
+    "ai-coding-agent",
+    "guardrails",
+    "architecture",
+    "code-review"
+  ],
+  "type": "commonjs",
+  "main": "lib/installer.js",
+  "bin": {
+    "boffinit": "bin/boffinit.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "packs/",
+    "hooks/",
+    "skills/",
+    "AGENTS.md",
+    "CREDITS",
+    "VERSION",
+    "LICENSE",
+    ".cursor/rules/boffin-pack-routing.mdc",
+    ".cursor/rules/boffin-post-change-audit.mdc",
+    ".cursor/rules/boffin-python-routing.mdc",
+    ".cursor/rules/boffin-cpp-routing.mdc"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check:versions": "node scripts/check-versions.js",
+    "test": "node scripts/check-versions.js && node --test tests/install.test.js tests/paths.test.js tests/update.test.js tests/uninstall.test.js tests/package.test.js tests/hooks.test.js tests/skills.test.js tests/claude-plugin.test.js tests/codex-plugin.test.js"
+  }
+}

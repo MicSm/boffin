@@ -2,7 +2,7 @@
 
 This file is NOT intended for LLM consumption. Human-readable guide only.
 
-ParselFire ships three core pack families. Each family has:
+ParselFire Core ships three core pack families. Each family has:
 
 - `pack.urf.md`: a thin index with routing, leaf registry, and stage references
 - `*.urf.md` leaf files: dense K/X record surfaces loaded by agents when relevant
@@ -21,4 +21,4 @@ Legend: `id | stage | scope | rule` means a stable record id, stage number, shor
 2. Open that family's `pack.urf.md` to see routing and `## LEAVES`.
 3. Follow the leaf files for the stage or seam you care about.
 
-Runtime note: ParselFire agents should load only `pack.urf.md` indexes and the `*.urf.md` leaf files resolved from those indexes, not these guide files.
+Runtime note: ParselFire Core agents should load only `pack.urf.md` indexes and the `*.urf.md` leaf files resolved from those indexes, not these guide files.
