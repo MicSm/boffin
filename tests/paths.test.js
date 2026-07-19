@@ -11,6 +11,7 @@ const {
   resolveTarget,
   toPosixPath,
   validateManagedPath,
+  validateOpenCodeManagedPath,
 } = require('../lib/paths');
 
 async function makeSandbox(t) {
@@ -63,6 +64,18 @@ test('managed paths use normalized POSIX separators and safe namespaces', () => 
   );
   assert.throws(
     () => validateManagedPath('unrelated.txt'),
+    /unmanaged path/,
+  );
+  assert.equal(
+    validateOpenCodeManagedPath('.opencode/skills/boffin/SKILL.md'),
+    '.opencode/skills/boffin/SKILL.md',
+  );
+  assert.throws(
+    () => validateOpenCodeManagedPath('.cursor/rules/boffin-pack-routing.mdc'),
+    /unmanaged path/,
+  );
+  assert.throws(
+    () => validateManagedPath('.opencode/skills/boffin/SKILL.md'),
     /unmanaged path/,
   );
 });

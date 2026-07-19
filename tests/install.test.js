@@ -175,6 +175,6 @@ test('CLI exposes help and version without touching a repository', async () => {
   const help = await execFileAsync(process.execPath, [CLI, '--help']);
   const version = await execFileAsync(process.execPath, [CLI, '--version']);
 
-  assert.match(help.stdout, /Usage: boffinit cursor/);
+  assert.match(help.stdout, /Usage: boffinit <cursor\|opencode>/);
   assert.equal(version.stdout, '0.2.0\n');
 });

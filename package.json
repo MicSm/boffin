@@ -51,6 +51,6 @@
   },
   "scripts": {
     "check:versions": "node scripts/check-versions.js",
-    "test": "node scripts/check-versions.js && node --test tests/install.test.js tests/paths.test.js tests/update.test.js tests/uninstall.test.js tests/package.test.js tests/hooks.test.js tests/skills.test.js tests/claude-plugin.test.js tests/codex-plugin.test.js"
+    "test": "node scripts/check-versions.js && node --test tests/install.test.js tests/paths.test.js tests/update.test.js tests/uninstall.test.js tests/package.test.js tests/hooks.test.js tests/skills.test.js tests/claude-plugin.test.js tests/codex-plugin.test.js tests/opencode-install.test.js"
   }
 }
