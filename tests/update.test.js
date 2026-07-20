@@ -97,12 +97,12 @@ test('update migrates an older version fixture and preserves unknown pack files'
   );
   assert.equal(
     await fs.readFile(path.join(target, '.boffin', 'VERSION'), 'utf8'),
-    '0.2.0\n',
+    '0.3.0\n',
   );
 
   const manifest = await readManifest(target);
   assert.equal(manifest.schemaVersion, 1);
-  assert.equal(manifest.version, '0.2.0');
+  assert.equal(manifest.version, '0.3.0');
   assert.equal(manifest.installedAt, OLD_INSTALLED_AT);
   assert.ok(!manifest.managedFiles.includes(
     '.boffin/packs/legacy/removed.urf.md',

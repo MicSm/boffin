@@ -59,6 +59,21 @@ Codex does not trust plugin hooks automatically. Run `/hooks` once inside Codex
 to review and trust Boffin's hooks; until then the plugin's skills work but the
 automatic per-session activation stays off.
 
+### OpenCode
+
+Run from your project:
+
+```sh
+npx boffinit opencode
+```
+
+Then open the project in OpenCode. Always-on guidance lands via
+`opencode.json` -> `.boffin/AGENTS.md`. On demand: `/boffin`,
+`/boffin-review`, or the `boffin` / `boffin-review` skills.
+
+Install details, commands, and troubleshooting:
+**[OpenCode delivery](docs/opencode.md)**.
+
 Want the machinery? Read **[how ParselFire Core works](docs/engine.md)**.
 
 ## What Boffin is fussy about
@@ -109,14 +124,16 @@ filesystem or network access. It guides architectural decisions in generated
 code. Use command sandboxes and security controls for their own job; Boffin has
 a different job.
 
-### How do I uninstall the Cursor integration?
+### How do I uninstall the Cursor or OpenCode integration?
 
 ```sh
 npx boffinit cursor uninstall
+npx boffinit opencode uninstall
 ```
 
-The uninstaller removes Boffin-managed files only and leaves unrelated Cursor
-rules and unknown project files alone.
+Each uninstaller removes that host's managed files only. Shared
+`.boffin/packs` and `.boffin/VERSION` stay if the other host is still
+installed. Unrelated project files are left alone.
 
 ### Does Boffin replace tests or code review?
 

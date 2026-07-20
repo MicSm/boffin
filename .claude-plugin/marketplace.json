@@ -10,7 +10,7 @@
       "displayName": "Boffin",
       "source": "./",
       "description": "Strict, routed architectural guardrails for AI coding agents, powered by ParselFire Core.",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": {
         "name": "MicSm"
       },

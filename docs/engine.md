@@ -126,9 +126,15 @@ The launch delivery paths are:
 - **Claude Code:** the repository's Claude marketplace/plugin surface exposes
   the shared Boffin skills and hooks.
 - **Codex:** the Codex plugin reuses the same shared skills and hook runtime.
+- **OpenCode:** `npx boffinit opencode` vendors the same packs under
+  `.boffin/packs/`, writes always-on guidance to `.boffin/AGENTS.md` via
+  `opencode.json` `instructions`, and emits OpenCode-native skills/commands
+  under `.opencode/`. See **[docs/opencode.md](opencode.md)**.
 
-The npm installer and the Claude/Codex plugin surfaces are separate delivery
-paths. They share the same guidance; one is not packaged inside the other.
+The npm installer (Cursor + OpenCode) and the Claude/Codex plugin surfaces are
+separate delivery paths. They share the same guidance; one is not packaged
+inside the other. Cursor and OpenCode may coexist in one project: each owns its
+host files; packs and `VERSION` are shared.
 
 Portable static adapters remain available for hosts that already consume
 repository instructions:
@@ -165,7 +171,8 @@ README.md               Public product and install surface
 docs/engine.md          This technical engine guide
 assets/                 Product and social artwork
 package.json            npm metadata for boffinit
-bin/ and lib/           Cursor installer entry point and implementation
+bin/ and lib/           boffinit installer (Cursor + OpenCode) entry and impl
+docs/opencode.md        OpenCode install / commands / troubleshooting
 hooks/ and skills/      Shared Claude Code / Codex runtime surfaces
 .claude-plugin/         Claude marketplace and plugin manifests
 .codex-plugin/          Codex plugin manifest

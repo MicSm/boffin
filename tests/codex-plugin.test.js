@@ -20,7 +20,7 @@ test('Codex manifest resolves shared assets and conservative metadata', () => {
   );
 
   assert.equal(manifest.name, 'boffin');
-  assert.equal(manifest.version, '0.2.0');
+  assert.equal(manifest.version, '0.3.0');
   assert.equal(manifest.repository, 'https://github.com/MicSm/boffin');
   assert.equal(manifest.homepage, 'https://github.com/MicSm/boffin');
   assert.equal(manifest.license, 'MIT');

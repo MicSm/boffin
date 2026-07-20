@@ -375,7 +375,7 @@ test('CLI installs opencode and documents both hosts', async (t) => {
   );
 
   assert.equal(stderr, '');
-  assert.match(stdout, /Installed boffinit 0\.2\.0/);
+  assert.match(stdout, /Installed boffinit 0\.3\.0/);
   await fs.lstat(path.join(target, '.opencode', 'skills', 'boffin', 'SKILL.md'));
 
   const help = await execFileAsync(process.execPath, [CLI, '--help']);

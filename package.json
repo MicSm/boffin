@@ -1,7 +1,7 @@
 {
   "name": "boffinit",
-  "version": "0.2.0",
-  "description": "Cursor installer and shared delivery assets for Boffin, routed architectural guardrails for AI coding agents",
+  "version": "0.3.0",
+  "description": "Installer and shared delivery assets for Boffin on Cursor and OpenCode; routed architectural guardrails for AI coding agents",
   "license": "MIT",
   "author": {
     "name": "MicSm",
@@ -19,6 +19,7 @@
     "boffin",
     "parselfire",
     "cursor",
+    "opencode",
     "claude-code",
     "codex",
     "ai-coding-agent",

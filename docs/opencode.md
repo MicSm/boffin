@@ -1,5 +1,11 @@
 # Boffin on OpenCode
 
+Boffin installs on OpenCode as a project-local host: shared packs, an always-on
+contract via `opencode.json`, and native skills and commands. Cursor and
+OpenCode can coexist in the same project.
+
+Prerequisite: OpenCode is installed and a provider is connected (`/connect`).
+
 Project install (default):
 
 ```bash
@@ -19,7 +25,7 @@ opencode
 
 - Skill names must be unique. Boffin ships only under `.opencode/skills/` (not also under `.claude/skills/`).
 - `SKILL.md` frontmatter needs `name` and `description` (1-1024 chars); `name` must match the directory.
-- If the host only has `opencode.jsonc`, boffinit does not create a competing `opencode.json`. Add `".boffin/AGENTS.md"` to that file's `instructions` array, or use the root-`AGENTS.md` inject fallback after host smoke fails.
+- If the host only has `opencode.jsonc`, boffinit does not create a competing `opencode.json`. Add `".boffin/AGENTS.md"` to that file's `instructions` array manually (boffinit prints this note and still installs packs, skills, and commands).
 - Update never resets a chosen `.boffin/profile`.
 
 ## Uninstall
