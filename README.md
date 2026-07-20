@@ -4,6 +4,13 @@
 
 <h1 align="center">Boffin</h1>
 
+<p align="center">
+  <a href="#cursor">Cursor</a> ·
+  <a href="#claude-code">Claude Code</a> ·
+  <a href="#codex">Codex</a> ·
+  <a href="#opencode">OpenCode</a>
+</p>
+
 <p align="center"><strong>You asked for a small fix. Your AI agent came back with a renovation.</strong></p>
 
 <p align="center">Boffin is the brilliant, fussy technical expert who reads the diff and refuses to let your coding agent knock out a load-bearing wall.</p>
