@@ -25,7 +25,7 @@ test('Claude manifest discovers the shared skills and hooks', () => {
   const manifest = readJson('.claude-plugin/plugin.json');
   assert.equal(manifest.name, 'boffin');
   assert.equal(manifest.displayName, 'Boffin');
-  assert.equal(manifest.version, '0.3.0');
+  assert.equal(manifest.version, '0.3.1');
   assert.equal(manifest.repository, 'https://github.com/MicSm/boffin');
   assert.equal(manifest.license, 'MIT');
 
@@ -45,7 +45,7 @@ test('Claude marketplace exposes Boffin from the repository root', () => {
 
   const plugin = marketplace.plugins[0];
   assert.equal(plugin.name, 'boffin');
-  assert.equal(plugin.version, '0.3.0');
+  assert.equal(plugin.version, '0.3.1');
   assert.equal(plugin.source, './');
   assert.equal(plugin.category, 'productivity');
   assert.equal(resolvePluginAsset(plugin.source), ROOT);

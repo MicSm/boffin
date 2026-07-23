@@ -29,7 +29,7 @@ test('package metadata exposes the frozen dependency-free CLI contract', async (
   );
 
   assert.equal(packageJson.name, 'boffinit');
-  assert.equal(packageJson.version, '0.3.0');
+  assert.equal(packageJson.version, '0.3.1');
   assert.equal(packageJson.type, 'commonjs');
   assert.equal(packageJson.engines.node, '>=18');
   assert.deepEqual(packageJson.bin, { boffinit: 'bin/boffinit.js' });

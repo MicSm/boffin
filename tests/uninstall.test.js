@@ -103,7 +103,7 @@ test('uninstall dry-run leaves every managed file in place', async (t) => {
     ),
     manifestBefore,
   );
-  assert.equal((await readManifest(target)).version, '0.3.0');
+  assert.equal((await readManifest(target)).version, '0.3.1');
 
   await uninstall({ target });
   await assert.rejects(fs.lstat(path.join(target, '.boffin')), { code: 'ENOENT' });
@@ -142,6 +142,6 @@ test('uninstall rejects an unsafe manifest before removing files', async (t) => 
   assert.equal(await fs.readFile(importantFile, 'utf8'), 'keep');
   assert.equal(
     await fs.readFile(path.join(target, '.boffin', 'VERSION'), 'utf8'),
-    '0.3.0\n',
+    '0.3.1\n',
   );
 });

@@ -13,6 +13,7 @@ CPP-K15|stage=1|scope=pool-factory-identity|kernel=construct pooled objects thro
 CPP-K16|stage=1|scope=canonical-first-fallback|kernel=run canonical resolution first and enter permissive fallback only from a narrowly classified not-found state
 CPP-K17|stage=1|scope=encoding-explicit-compare|kernel=require explicit transcoding before comparing string types with different encodings or character widths
 CPP-K18|stage=1|scope=build-runtime-context-match|kernel=reject runtime mode requests that the current build was not compiled to support
+CPP-K54|stage=1|scope=untrusted-operand-range|kernel=validate the range of untrusted numeric operands before arithmetic whose result feeds a bounds check
 ```
 
 ## EXCLUDES
@@ -28,4 +29,5 @@ CPP-X15|stage=1|scope=posthoc-pool-identity|violation=do not construct pooled ob
 CPP-X16|stage=1|scope=softfail-hijack-fallback|violation=do not turn canonical resolution failures into broad soft-fallbacks that let unrelated alternatives hijack the result
 CPP-X17|stage=1|scope=implicit-cross-encoding|violation=do not provide implicit equality or ordering operators between string types that silently smuggle in encoding conversions
 CPP-X18|stage=1|scope=incompatible-mode-init|violation=do not let runtime mode selection enter code paths that the binary was not built to implement
+CPP-X54|stage=1|scope=overflow-bypassed-bound|violation=do not rely on a bounds check of a computed result as the only guard when intermediate overflow can turn out-of-range operands into an in-range result
 ```

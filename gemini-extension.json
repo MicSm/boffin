@@ -1,6 +1,6 @@
 {
   "name": "boffin",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Boffin: strict routed architectural guardrails for AI coding agents, powered by ParselFire Core.",
   "contextFileName": "AGENTS.md"
 }

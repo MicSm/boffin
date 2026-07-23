@@ -11,6 +11,7 @@ CPP-K26|stage=3|scope=instance-owned-control-state|kernel=attach mutable control
 CPP-K28|stage=3|scope=owned-worker-join|kernel=treat launched worker threads as owned lifecycle resources by waking blockers and joining every worker on teardown paths
 CPP-K29|stage=3|scope=context-owned-scratch|kernel=keep per-resource scratch state on the owning processor or resolver instance
 CPP-K30|stage=3|scope=loop-phased-transition|kernel=queue state transitions and run enter exit cleanup and destruction at a stable main-loop phase with explicit previous and next states
+CPP-K53|stage=3|scope=canonical-owner-free|kernel=free a shared resource only through its single canonical owner and treat every other holder or error path that only borrowed the reference as non-owning
 ```
 
 ## EXCLUDES
@@ -24,4 +25,5 @@ CPP-X26|stage=3|scope=globalized-control-state|violation=do not store per-instan
 CPP-X28|stage=3|scope=detached-worker-lifecycle|violation=do not detach executor-owned worker threads or wait uninterruptibly on dependencies during cancellation and teardown
 CPP-X29|stage=3|scope=global-scratch-state|violation=do not store per-resource temporary state in static globals reused across independent requests or resolver instances
 CPP-X30|stage=3|scope=inline-half-transition|violation=do not perform state enter exit and teardown inline inside setters where mid-frame work can observe half-transitioned state
+CPP-X53|stage=3|scope=borrowed-ref-double-free|violation=do not free a resource from a borrowed reference or an error path when another structure is its canonical owner and will free it during normal teardown
 ```
