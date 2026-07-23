@@ -130,11 +130,11 @@ test('CLI handles a target path containing spaces', async (t) => {
     { cwd: sandbox },
   );
 
-  assert.match(stdout, /Installed boffinit 0\.3\.0/);
+  assert.match(stdout, /Installed boffinit 0\.3\.1/);
   assert.equal(stderr, '');
   assert.equal(
     await fs.readFile(path.join(target, '.boffin', 'VERSION'), 'utf8'),
-    '0.3.0\n',
+    '0.3.1\n',
   );
 });
 
@@ -151,7 +151,7 @@ test('CLI defaults to install at the detected repository root', async (t) => {
     { cwd: nested },
   );
 
-  assert.match(stdout, /Would install boffinit 0\.3\.0/);
+  assert.match(stdout, /Would install boffinit 0\.3\.1/);
   assert.ok(stdout.includes(repository));
   await assert.rejects(
     fs.lstat(path.join(repository, '.boffin')),
@@ -176,5 +176,5 @@ test('CLI exposes help and version without touching a repository', async () => {
   const version = await execFileAsync(process.execPath, [CLI, '--version']);
 
   assert.match(help.stdout, /Usage: boffinit <cursor\|opencode>/);
-  assert.equal(version.stdout, '0.3.0\n');
+  assert.equal(version.stdout, '0.3.1\n');
 });

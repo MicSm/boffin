@@ -1,6 +1,6 @@
 {
   "name": "boffinit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Installer and shared delivery assets for Boffin on Cursor and OpenCode; routed architectural guardrails for AI coding agents",
   "license": "MIT",
   "author": {
